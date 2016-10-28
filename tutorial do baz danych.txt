@@ -14,12 +14,12 @@ Tutorial - Jak stworzyć bazkę w sql z naszymi danymi
 	limit 20;
    Pokaże ono 20 pierwszych wpisów.
 11. Polecenie pokazujące statystyki - Liczba wpisów zaokrąglona do 100 w górę z liczbą autorów tych wpisów:
-	select total, count(AnonID) as UserCount
-	from (
-		select AnonID, ((count(AnonID)%100)*100) as total
-		from SAG_WEDT
-		group by AnonID
-		)
-	group by total
-	order by total desc;
+select total||' - '||(total+100), count(AnonID) as UserCount
+from (
+	select AnonID, ((count(AnonID)/100)*100) as total
+	from SAG_WEDT
+	group by AnonID
+	)
+group by total
+order by total desc;
 12. Wychodzi się poleceniem ".quit", mi nie zapisywało jak zamykałem okno terminala, a po tym poleceniu wszystko było ok
