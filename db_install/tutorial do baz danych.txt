@@ -1,0 +1,25 @@
+Tutorial - Jak stworzyć bazkę w sql z naszymi danymi
+	by Szimi (c) ©
+1. Na linuxie ściągnij program sqlite3
+2. Stwórz plik bazodanowy w wybranym przez siebie folderze (najlepiej tam gdzie pliki tekstowe z danymi); nazwa np. "aol.db"
+3. Otwórz w tym folderze terminal i wpisz "sqlite3" uruchamiając command line dla sqlite; teraz linia zaczyna się od "sqlite>"
+4. Otwórz bazę poleceniem ".open <nazwa bazy>" (nie kończyć średnikiem - tylko sql tak kończymy)
+5. Następnie ustal separator pliku wejściowego na tabulację poleceniem ".separator '	'", aby wcisnąć tabulację w command line wciśnij ctrl+v+tab
+6. Utwórz tabelę poleceniem sql "CREATE TABLE SAG_WEDT(AnonId integer, Query text, QueryTime text, ItemRank integer, ClickURL text);"
+7. Z pliku tekstowego usuń pierwszą linię z nazwami kolumn (AnonID, Query...)
+8. Zaimportuj plik do bazy poleceniem ".import <nazwa pliku> <nazwa tabeli>", np. ".import user-ct-test-collection-01.txt SAG_WEDT"
+9. Cierpliwie poczekaj i ciesz się danymi
+10. Żeby podejrzeć dane wykonaj polecenie sql:
+	select * from SAG_WEDT
+	limit 20;
+   Pokaże ono 20 pierwszych wpisów.
+11. Polecenie pokazujące statystyki - Liczba wpisów zaokrąglona do 100 w górę z liczbą autorów tych wpisów:
+select total||' - '||(total+100), count(AnonID) as UserCount
+from (
+	select AnonID, ((count(AnonID)/100)*100) as total
+	from SAG_WEDT
+	group by AnonID
+	)
+group by total
+order by total desc;
+12. Wychodzi się poleceniem ".quit", mi nie zapisywało jak zamykałem okno terminala, a po tym poleceniu wszystko było ok

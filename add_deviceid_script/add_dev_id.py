@@ -63,7 +63,7 @@ def put_aol_dev_rows(session, rows, bulk_size):
 		session.add(r)
 		i = i+1
 		if i % bulk_size == 0:
-			session.commit()
+			session.flush()
 	session.commit
 
 
@@ -195,14 +195,14 @@ def add_devids_to_rows(query_sessions, dev_count, queries_count, current_devid):
 
 
 if __name__ == "__main__":
-	source_db_engine = create_engine('sqlite:///original_db/aol.db', echo=False)
+	source_db_engine = create_engine('sqlite:///db/original_db/aol.db', echo=False)
 	Session = sessionmaker(bind=source_db_engine)
 	src_session = Session()
 	
 	anonids_result = src_session.query(AOLRow.AnonId).distinct().all()
 	anonids = [x[0] for x in anonids_result]
 	
-	dest_db_engine = create_engine('sqlite:///dest_db/aol_devices.db', echo=False)
+	dest_db_engine = create_engine('sqlite:///db/dest_db/aol_devices.db', echo=False)
 	Session = sessionmaker(bind=dest_db_engine)
 	dest_session = Session()
 	
@@ -216,6 +216,7 @@ if __name__ == "__main__":
 		if queries is None or len(queries) <= 0:
 			continue
 		ss = get_query_sessions(queries)
+		
 		dev_count = draw_devices_num(len(ss))
 		dev_queries = add_devids_to_rows(ss, dev_count, len(queries), current_devid)
 		put_aol_dev_rows(dest_session, dev_queries, 300)
