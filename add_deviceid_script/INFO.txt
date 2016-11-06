@@ -1,0 +1,40 @@
+Wymagania do poprawnego odpalenia skryptu:
+
+- Python 2.7 + NumPy + SQLAlchemy + sqlite3
+
+- istnienie bazy w: ./original_db/aol.db
+  z danymi w tabeli 'AOL' ze schematem:
+  create table AOL(AnonId integer, Query text, QueryTime text, ItemRank integer, ClickURL text);
+
+- istnienie bazy w: ./dest_db/aol_devices.db
+  z pusta tabela 'AOL_devices' ze schematem:
+  create table AOL_devices(DeviceId integer, AnonId integer, Query text, QueryTime text, ItemRank integer, ClickURL text);
+
+------------------------------------------------
+
+Jesli chcemy aby skrypt bral pdo uwage tylko pewien zakres uzytkownikow a nie ich wszystkich:
+
+-> patrz kod skryptu linie: 212-214
+
+------------------------------------------------
+
+Uruchomienie skryptu:
+
+python add_dev_id.py
+
+------------------------------------------------
+
+Co do oszacowania szybkosci dzialania skryptu:
+
+A propos naszej bazy AOL (bez uzytkownikow z liczba zapytan ponizej 100):
+* srednia liczba zapytan na 1 uzytkownika: 261.66
+* w jednym pliku tekstowym aol data (a mamy takich 10) jest 3,558,412 zapytan (co odpowiada srednio 13599 roznym uzytkownikom) -> dr Ryzko na to zareagowal "woah, wystarczy"
+* liczba wszystkich zapytan: 24,028,403
+* liczba roznych uzytkownikow: 91,830
+
+Co do tego skryptu:
+- obsluzenie 10 pierwszych uzytkownikow zajelo: 1m28.1s = 88.1s
+- ogarniecie wszystkich danych zajmie jakies: 809022s = 13483m = 224h = 9.3 dni !!!
+- przemielenie ok. 327 uzytkownikow zajeloby ok. 8h -> mozna zostawic kompa na noc
+- 327 uzytkownikow daloby srednio 85,562 zapytan (czyli jakies 2,4% zapytan z 1 pliku tekstowego z danymi AOL)
+- ^ zatem przemielenie tylu zapytan ile jest w 1 pliku tekstowym AOL zajelo by prawie 42 razy dluzej !!!
