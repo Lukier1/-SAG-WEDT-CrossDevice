@@ -57,20 +57,38 @@ class AOLDevicesRow(Base):
 		self.ClickURL = url
 
 
+#def put_aol_dev_rows(session, rows, bulk_size):
+#	i = 0
+#	for r in rows:
+#		session.add(r)
+#		i = i+1
+#		if i % bulk_size == 0:
+#			session.flush()
+#	session.commit()
+
 def put_aol_dev_rows(session, rows, bulk_size):
-	i = 0
-	for r in rows:
-		session.add(r)
-		i = i+1
-		if i % bulk_size == 0:
-			session.flush()
-	session.commit
+	N = len(rows)
+	n = 0
+	while n < N:
+		session.bulk_save_objects(rows[n:n+bulk_size])
+		n += bulk_size
+	session.commit()
+
+#def put_aol_dev_rows(engine, rows, bulk_size):
+#	rows_dict = [{'DeviceId': r.DeviceId, 'AnonId': r.AnonId,\
+#	'Query': r.Query, 'QueryTime': r.QueryTime, 'ItemRank': r.ItemRank,\
+#	'ClickURL': r.ClickURL} for r in rows]
+#	N = len(rows)
+#	n = 0
+#	while n < N:
+#		engine.execute(AOLDevicesRow.__table__.insert(), rows_dict[n:n+bulk_size])
+#		n += bulk_size
 
 
 def draw_devices_num(sessions_count):
-	if  6 >= sessions_count >= 2:
+	if  20 >= sessions_count >= 2:
 		return numpy.random.choice(numpy.arange(1, 3), p=[0.2, 0.8])
-	elif sessions_count > 6:
+	elif sessions_count > 20:
 		return numpy.random.choice(numpy.arange(1, 4), p=[0.1, 0.2, 0.7])
 	return 1
 
@@ -97,11 +115,11 @@ def get_query_sessions(queries):
 			sessions.append((ratio, session))
 			session = [queries[count]]
 		count += 1
-	if len(sessions) == 0:
+	else:
 		ratio = float(len(session)) / len(queries)
 		sessions.append((ratio, session))
-	sorted_sessions = sorted(sessions, key=itemgetter(0), reverse=True)
-	return sorted_sessions
+	sessions.sort(key=itemgetter(0), reverse=True)
+	return sessions
 
 
 # 'sessions_ratios' needs to be sorted in desceding order with values 1-100:
@@ -201,6 +219,7 @@ if __name__ == "__main__":
 	
 	anonids_result = src_session.query(AOLRow.AnonId).distinct().all()
 	anonids = [x[0] for x in anonids_result]
+	random.shuffle(anonids)
 	
 	dest_db_engine = create_engine('sqlite:///db/dest_db/aol_devices.db', echo=False)
 	Session = sessionmaker(bind=dest_db_engine)
@@ -209,17 +228,15 @@ if __name__ == "__main__":
 	print "Db sessions created. Script started."
 	
 	current_devid = 1
-	#to iterate through anonids from indexes <N, M):
-	#for current_anonid in anonids[N:M]:
 	for current_anonid in anonids:
 		queries = get_aol_rows(src_session, current_anonid)
 		if queries is None or len(queries) <= 0:
 			continue
 		ss = get_query_sessions(queries)
-		
 		dev_count = draw_devices_num(len(ss))
 		dev_queries = add_devids_to_rows(ss, dev_count, len(queries), current_devid)
 		put_aol_dev_rows(dest_session, dev_queries, 300)
+		#put_aol_dev_rows(dest_db_engine, dev_queries, 300)
 		current_devid += dev_count
 
 	print "Done."

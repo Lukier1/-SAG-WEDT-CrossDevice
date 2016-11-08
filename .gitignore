@@ -1,3 +1,11 @@
+# database files:
 db
-.venv
+*.db
+db_install/db
+add_deviceid_script/db
 
+# virtual environment:
+.venv
+env
+venv
+.env

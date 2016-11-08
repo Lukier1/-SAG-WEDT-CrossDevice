@@ -1,0 +1,5 @@
+Pliki w tym katalogu:
+- aol_devices.sql.bz2 - skompresowany bzip2 sql dump danych z dodanym juz atrybutem DeviceId
+- create_db.sh - skrypt tworzacy baze danych ze skompresowanego dumpa (tworzy plik bazy aol_devices.db)
+- tutorial do baz danych.txt - tutorial Szimiego jak zimportowac dane AOL z oryginalnych plikow tekstowych do bazy sqlite3
+- zapytania_statystyki.txt - plik z wybranymi zapytaniami SQL i wynikami ich wykonania na bazie 'aol_devices.db'
