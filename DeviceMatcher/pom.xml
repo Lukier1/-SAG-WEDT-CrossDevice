@@ -68,11 +68,11 @@
       <classifier>models</classifier>
     </dependency>
 
-    <!--<dependency>-->
-      <!--<groupId>org.apache.opennlp</groupId>-->
-      <!--<artifactId>opennlp-tools</artifactId>-->
-      <!--<version>1.6.0</version>-->
-    <!--</dependency>-->
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-tools</artifactId>
+      <version>1.6.0</version>
+    </dependency>
 
   </dependencies>
 
