@@ -10,7 +10,6 @@ import edu.stanford.nlp.tagger.maxent.MaxentTagger
 import edu.stanford.nlp.util.{CoreMap, Timing}
 
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
 
@@ -34,6 +33,47 @@ object NLPUtils {
     stopWords.add(line)
   }
 
+  /**
+    * Przyrostki, ktore moga sie czesto pojawic a powinny byc usuniete w przetarzaniu wstepnym zapytan
+    */
+  private val uselessSuffixes = Array(".com", ".org", ".net", ".edu", ".gov", "www.", "ww.", ".uk", ".de", ".es", ".eu", ".gf", ".pl", ".us", ".rus", ".ru")
+
+  /**
+    * Klasyfikator NER
+    */
+  //private val classifier = CRFClassifier.getClassifier("edu/stanford/nlp/models/ner/english.all.3class.distsim.crf.ser.gz")
+  //private val classifier = CRFClassifier.getClassifier("edu/stanford/nlp/models/ner/english.conll.4class.distsim.crf.ser.gz")
+  private val classifier = CRFClassifier.getClassifier("edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz")
+
+  /**
+    * Model POS taggera
+    */
+  private val posModel = loadModel(System.getProperty("pos.model", MaxentTagger.DEFAULT_JAR_PATH), false)
+
+  /**
+    * Usuwa wybrane niepotrzebne przyrostki (patrz: uselessSuffixes) wystepujace w zadanym lancuchu znakow
+    *
+    * @param document Zadany lancuch znakow
+    * @return Zmodyfikowany lancuch znakow
+    */
+  def removeUselessSuffixes(document: String): String = {
+    var modifiedDoc = document
+    for (suf <- uselessSuffixes) {
+      modifiedDoc = modifiedDoc.replace(suf, " ")
+    }
+    modifiedDoc
+  }
+
+  /**
+    * Usuwa czesc "niewygodnej" w dalszym przetwarzaniu interpunkcji (wystepowanie /|\+=-!?.<>-?* pomiedzy slowami
+    * bez spacji, np. "ala?ma+kota" -> "ala ma kota")
+    *
+    * @param document Zadany lancuch znakow
+    * @return Zmodyfikowany lancuch znakow
+    */
+  def removeSomePunctuation(document: String): String = {
+    document.replaceAll("\\b[\\/\\\\+=|!.<>-?*^]\\b", " ")
+  }
 
   /**
     * Pobiera string i znajduje nazwy wlasne.
@@ -48,10 +88,6 @@ object NLPUtils {
     *         na kolejnych miejscach sa kolejne nazwy wlasne
     */
   def markNamedEntities(document: String): util.List[String] = {
-    /*pobiera z resurces, znajduje "london city"*/
-    //val classifier = CRFClassifier.getClassifier("classifiers/english.all.3class.distsim.crf.ser.gz")
-    /*pobiera z jara z mavena, znajduje samo "london" bez "city"*/
-    val classifier = CRFClassifier.getClassifier("edu/stanford/nlp/models/ner/english.all.3class.distsim.crf.ser.gz")
     var namedEntities = new util.LinkedList[String]
     var tmpDoc = document.toLowerCase()
     val triples = classifier.classifyToCharacterOffsets(tmpDoc.toUpperCase)
@@ -67,27 +103,6 @@ object NLPUtils {
     res.addAll(namedEntities)
     res
   }
-
-  /**
-    * wersja OpenNLP, aby zadziałała należy ściągnąć classifier ze strony
-    * http://opennlp.sourceforge.net/models-1.5/
-    */
-  //  def markNamedEntities(document: String): String = {
-  //    val resourcesStream = NLPUtils.getClass.getResourceAsStream("/classifiers/en-ner-location.bin")
-  //    val nameFinder = new NameFinderME(new TokenNameFinderModel(resourcesStream))
-  //    var tmpDoc = document.toLowerCase
-  //    val tokens = document.toUpperCase.split(' ')
-  //    val spans = nameFinder.find(tokens)
-  //    for (span <- spans) {
-  //      val length = span.getEnd-span.getStart
-  //      val namedEntity = new StringBuilder(tokens(span.getStart).toLowerCase)
-  //      for (i <- span.getStart+1 to span.getEnd-1)
-  //        namedEntity.append(" "+tokens(i).toLowerCase)
-  //      val markedNamedEntity = namedEntity.toString().replace(' ', '_')
-  //      tmpDoc = tmpDoc.replaceFirst(namedEntity.toString(), markedNamedEntity)
-  //    }
-  //    tmpDoc
-  //  }
 
   /**
     * Pobiera dokument, przeprowadza tokenizacje,
@@ -167,11 +182,11 @@ object NLPUtils {
       coreLabel.setWord(token)
       labels.add(coreLabel)
     }
-    val pos = loadModel(System.getProperty("pos.model", MaxentTagger.DEFAULT_JAR_PATH), false)
+    //val pos = loadModel(System.getProperty("pos.model", MaxentTagger.DEFAULT_JAR_PATH), false)
     var tagged: util.List[TaggedWord] = new util.LinkedList[TaggedWord]()
     if (labels.size() <= Integer.MAX_VALUE) {
       try {
-        tagged = pos.tagSentence(labels, false);
+        tagged = posModel.tagSentence(labels, false);
       } catch {
         case e: OutOfMemoryError =>
           println("WARNING: Tagging of sentence ran out of memory.")
@@ -232,6 +247,5 @@ object NLPUtils {
     }
     else map.set(ann, morpha.stem(word))
   }
-
 
 }
