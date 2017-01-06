@@ -4,6 +4,7 @@ import java.util
 
 import scala.collection.JavaConversions._
 import edu.stanford.nlp.ling.CoreLabel
+import pl.edu.pw.elka.devicematcher.data.{Database, DeviceQueryDAO, DocumentDAO}
 import pl.edu.pw.elka.devicematcher.actors.ActorsPrototype
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel}
 import pl.edu.pw.elka.devicematcher.utils.{MetricsUtils, NLPUtils, WordnetUtils}
@@ -93,38 +94,22 @@ object DeviceMatcherApp extends App {
     val lda = new TopicModel(numOfTopics, 50, 0.1, 0.01)  // stworz niewytrenowany model LDA
     lda.train(docs, false)    // trenuj model LDA na zbiorze dokumentow 'docs' nie biorac pod uwage slow ze zbiorow 'pozostale'
 
-    println("Topics (top 5 words and their count):")
-    val dataAlphabet = lda.getAlphabet()
-    val topicSortedWords = lda.getTopicSortedWords()
-    for (i <- 0 until numOfTopics) {
-      print("Topic nr " + (i+1) + ": ")
-      val iterator = topicSortedWords.get(i).iterator()
-      var rank = 0
-      while (iterator.hasNext && rank < 5) {
-        val idCountPair = iterator.next()
-        print(dataAlphabet.lookupObject(idCountPair.getID()) + " (" + idCountPair.getWeight() + "), ")
-        rank += 1
-      }
-      println()
-    }
+    /**
+      * pokaz dzialania MongoDB
+      */
+    val doc = DocumentDAO.getDocumentByDevice(document3.getDeviceID()) //WAZNE! zakladam w tej funkcji ze deviceId sa unikalne
+    println(doc.toString())
 
-    println("\nTopic distributions for documents:")
-    for (d <- docs) {
-      val probs = lda.getTopicDistributionByDevID(d.getDeviceID())
-      d.setTopicDistribution(probs)
-      print("Document nr " + d.getDeviceID() + ": ")
-      for (j <- 0 until numOfTopics) {
-        print(probs(j) + ", ")
-      }
-      println()
-    }
+    //pobierz wszystkie dokumenty, z projekcja
+    val iterator = DocumentDAO.getAllDocuments(Array[String](DocumentDAO.Columns.NAMED_ENTITIES, DocumentDAO.Columns.DEVICE_ID))
+    while (iterator.hasNext)
+      println(iterator.next())
 
-    println("\nJS divergence:")
-    for (i <- 0 until docs.size()) {
-      for (j <- 0 until docs.size()) {
-        println("divJS(doc" + docs.get(i).getDeviceID() + "," + docs.get(j).getDeviceID() + ")= "
-          + MetricsUtils.divJS(docs.get(i).getTopicDistribution(), docs.get(j).getTopicDistribution()))
-      }
-    }
+    //pobierz deviceQuery dla deviceId=1, z projekcja
+    val it2 =DeviceQueryDAO.getDeviceQueriesByDevice(1, Array[String](DeviceQueryDAO.Columns.QUERY))
+    while (it2.hasNext)
+      println(it2.next())
+
+    Database.client.close()
   }
 }
