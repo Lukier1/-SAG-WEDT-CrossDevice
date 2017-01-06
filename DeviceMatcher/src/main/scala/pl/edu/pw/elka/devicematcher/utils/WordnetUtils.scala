@@ -1,6 +1,5 @@
 package pl.edu.pw.elka.devicematcher.utils
 
-import java.net.URL
 import java.util
 
 import scala.collection.JavaConversions._

@@ -21,14 +21,14 @@ class Document(devID: Int, namedEnts: util.List[String], wordnetWords: util.List
   private val wordnetTerms = new util.ArrayList[String]()
   wordnetTerms.addAll(wordnetWords)
   private val otherTerms = new util.ArrayList[String]()
-  otherTerms.addAll(otherWords)
+    otherTerms.addAll(otherWords)
 
   /**
     * Rozklad wystepowania tematow wyszukiwan
     */
   private var topicDistribution: Array[Double] = _
 
-  def getDeviceID(): Int = { deviceID }
+  def getDeviceID() = deviceID
 
   def addToNamedEntities(words: util.Collection[String]): Unit = {
     namedEntities.addAll(words)

@@ -14,6 +14,13 @@ import scala.collection.mutable
 import scala.io.Source
 
 /**
+  * Klasa zawierająca narzędzia  do NLP takie jak:
+  * Tagowanie POS
+  * Stopwords
+  * Usuwanie suffixow webowych
+  * Usuwanie interpunkcji
+  * Oznaczanie nazw własnych
+  * Przepoprwadzanie tokenizacji
   * Created by szymon on 28.12.16.
   */
 object NLPUtils {
