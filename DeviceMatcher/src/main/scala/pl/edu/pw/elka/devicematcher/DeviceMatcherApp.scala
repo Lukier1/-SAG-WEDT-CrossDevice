@@ -4,6 +4,7 @@ import java.util
 
 import scala.collection.JavaConversions._
 import edu.stanford.nlp.ling.CoreLabel
+import pl.edu.pw.elka.devicematcher.actors.ActorsPrototype
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel}
 import pl.edu.pw.elka.devicematcher.utils.{MetricsUtils, NLPUtils, WordnetUtils}
 
@@ -15,7 +16,7 @@ object DeviceMatcherApp extends App {
     //          println(iterator.next())
     //
     //        Database.client.close()
-
+      ActorsPrototype.main()
     /**
       * przyklad ddzialania procesu
       */
