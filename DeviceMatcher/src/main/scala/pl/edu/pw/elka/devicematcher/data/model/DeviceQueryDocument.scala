@@ -6,11 +6,14 @@ import pl.edu.pw.elka.devicematcher.data.DeviceQueryDAO
 /**
   * Created by szymon on 25.12.16.
   *
-  * Ta klasa jest nieużywana
-  * Jeśli zdecydujemy że nie będziemy pracować na DBObject to się nada
   */
 class DeviceQueryDocument(deviceId: Integer, anonId: Integer, query: String) {
 
+  /**
+    * Tworzy obiekt za pomoca obiektu bazodanowego
+    *
+    * @param dBObject obiekt bazodanowy
+    */
   def this(dBObject: DBObject) = {
     this(Option(dBObject.get(DeviceQueryDAO.Columns.DEVICE_ID).toString.toInt).get,
       Option(dBObject.get(DeviceQueryDAO.Columns.ANON_ID).toString.toInt).get,
