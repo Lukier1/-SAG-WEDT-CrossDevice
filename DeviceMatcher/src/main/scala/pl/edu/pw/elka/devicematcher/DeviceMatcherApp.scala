@@ -27,7 +27,7 @@ object DeviceMatcherApp extends App {
     val wordnetWords = new util.ArrayList[String]()
     val otherWords = new util.ArrayList[String]()
 
-    for (q <- queries) {
+    for (q <- queries if !Option(q).forall(_.isEmpty)) {
       var doc = NLPUtils.removeUselessSuffixes(q)
       doc = NLPUtils.removeSomePunctuation(doc)
 
