@@ -4,8 +4,8 @@ import java.util
 
 import scala.collection.JavaConversions._
 import edu.stanford.nlp.ling.CoreLabel
+import pl.edu.pw.elka.devicematcher.agents.ActorsPrototype
 import pl.edu.pw.elka.devicematcher.data.{Database, DeviceQueryDAO, DocumentDAO}
-import pl.edu.pw.elka.devicematcher.actors.ActorsPrototype
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel}
 import pl.edu.pw.elka.devicematcher.utils.{MetricsUtils, NLPUtils, WordnetUtils}
 
