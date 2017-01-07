@@ -1,129 +1,178 @@
 package pl.edu.pw.elka.devicematcher
 
+import java.io._
 import java.util
 
-import scala.collection.JavaConversions._
+import edu.mit.jwi.IDictionary
 import edu.stanford.nlp.ling.CoreLabel
+import pl.edu.pw.elka.devicematcher.data.{Database, DeviceQueryDAO}
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel}
-import pl.edu.pw.elka.devicematcher.utils.{MetricsUtils, NLPUtils, WordnetUtils}
+import pl.edu.pw.elka.devicematcher.utils.{NLPUtils, WordnetUtils}
+
+import scala.collection.JavaConversions._
+
 
 object DeviceMatcherApp extends App {
 
-  override def main(args: Array[String]): Unit = {
-    //        val iterator = DeviceQueryDAO.getDeviceQueriesByDevice(1)
-    //        while(iterator.hasNext)
-    //          println(iterator.next())
-    //
-    //        Database.client.close()
+  /**
+    * Przygotowanie dokumentu LDA danego urządzenia na podstawie listy zapytań.
+    *
+    * @param devId id urządzenia
+    * @param queries lista zapytan urzadzenia
+    * @param dict otwarty slownik Wordnet potrzebny do przetwarzania słów zapytań
+    * @return utworzony dokument LDa reprezentujący zapytania urządzenia o zadanym id
+    */
+  def prepareDocument(devId: Int, queries: util.List[String], dict: IDictionary): Document = {
+    val namedEntities = new util.ArrayList[String]()
+    val wordnetWords = new util.ArrayList[String]()
+    val otherWords = new util.ArrayList[String]()
 
-    /**
-      * przyklad ddzialania procesu
-      */
-//    var content = "\"Oh, no,\" she's saying, \"our $400 blender can't handle something?this hard! Shops.+in new york are too fuck. London city has better shops.\""
-//    val nerResult = NLPUtils.markNamedEntities(content)
-//    val namedEntities = nerResult.subList(1, nerResult.size())
-//    val tokens = NLPUtils.tokenize(nerResult.get(0))
-//    var labels: util.List[CoreLabel] = NLPUtils.tagPartOfSpeech(tokens)
-//    labels = NLPUtils.lemmatize(labels)
-//    labels = NLPUtils.deleteStopWords(labels)
-//    println("##labels##")
-//    for (i <- 0 to labels.size()-1){
-//      println(i+". "+labels.get(i).word()+" : "+labels.get(i).tag()+" : "+labels.get(i).lemma())
-//    }
-//    println("##named enitites##")
-//    for (i <- 0 to namedEntities.size()-1){
-//      println(i+". "+namedEntities.get(i))
-//    }
+    for (q <- queries) {
+      var doc = NLPUtils.removeUselessSuffixes(q)
+      doc = NLPUtils.removeSomePunctuation(doc)
+
+      val nerResult = NLPUtils.markNamedEntities(doc)
+      namedEntities.addAll(nerResult.subList(1, nerResult.size()))
+
+      val tokens = NLPUtils.tokenize(nerResult.get(0))
+      var labels: util.List[CoreLabel] = NLPUtils.tagPartOfSpeech(tokens)
+      labels = NLPUtils.lemmatize(labels)
+      labels = NLPUtils.deleteStopWords(labels)
+
+      val words: util.List[String] = for (i <- labels.indices) yield labels.get(i).lemma()
+      val fromWordnet = WordnetUtils.retrieveWordnetTerms(dict, words)
+      wordnetWords.addAll(fromWordnet)
+      val others: util.List[String] = for (w <- words if !fromWordnet.contains(w)) yield w
+      otherWords.addAll(others)
+    }
+
+    return new Document(devId, namedEntities, wordnetWords, otherWords)
+  }
+
+  /**
+    * Serializacja i zapis danego modelu LDA do pliku.
+    *
+    * @param model model LDA do zapisu
+    * @param filename nazwa pliku
+    * @return true jeśli zapis powiódł się, false w p.p.
+    */
+  def writeTopicModelToFile(model: TopicModel, filename: String): Boolean = {
+    try {
+      val oos =  new ObjectOutputStream(new FileOutputStream("./src/main/resources/models/" + filename))
+      oos.writeObject(model)
+      oos.close()
+      return true
+    } catch {
+      case e: Exception =>
+        return false
+    }
+  }
+
+  /**
+    * Odczyt i deserializacja modelu LDA z pliku.
+    *
+    * @param filename nazwa pliku
+    * @return model LDA lub null, gdy się nie powiedzie odczyt/deserializacja
+    */
+  def readTopicModelFromFile(filename: String): TopicModel = {
+    try {
+      val ois = new ObjectInputStream(new FileInputStream("./src/main/resources/models/" + filename))
+      val model = ois.readObject.asInstanceOf[TopicModel]
+      ois.close()
+      return model
+    } catch {
+      case e: Exception =>
+        return null
+    }
+  }
+
+  override def main(args: Array[String]): Unit = {
+    val MIN_DEVID = 1
+    val MAX_DEVID = 1000
 
     val dict = WordnetUtils.getDictionary()
     dict.open()
 
-    val docs = new util.ArrayList[topicmodel.Document]() // lista wczytanych i przetworzonych dokumentow LDA
+    val docs = new util.ArrayList[Document]()
 
-    var doc_1 = "big tits creampie porn pornhub baby girls big.cars.com cars hooker drugs lsd mdm shit.org"
-    doc_1 = NLPUtils.removeUselessSuffixes(doc_1)       // usun przyrostki typu ".com", etc.
-    doc_1 = NLPUtils.removeSomePunctuation(doc_1)       // usun czesc dziwnej interpunkcji
-    val nerResult_1 = NLPUtils.markNamedEntities(doc_1)                 // NER
-    val namedEntities_1 = nerResult_1.subList(1, nerResult_1.size())    // wez liste encji nazwanych
-    val tokens_1 = NLPUtils.tokenize(nerResult_1.get(0))                // tokenizuj pozostale (nie bedace encjami) slowa
-    var labels_1: util.List[CoreLabel] = NLPUtils.tagPartOfSpeech(tokens_1)   // POS tagging tokenow
-    labels_1 = NLPUtils.lemmatize(labels_1)             // lematyzacja otagowanych tokenow
-    labels_1 = NLPUtils.deleteStopWords(labels_1)       // usuniecie stopwords
-    val words_1: util.List[String] = for (i <- labels_1.indices) yield labels_1.get(i).lemma()    // wyciagniecie samych lemm (stringow) z wyniku powyzszego przetwarzania
-    val wordnetWords_1 = WordnetUtils.retrieveWordnetTerms(dict, words_1)             // wyodrebnij z danych lemm pojecia wordnetowe
-    val otherWords_1: util.List[String] = for (w <- words_1 if !wordnetWords_1.contains(w)) yield w   // lista slow niebedacych encjami ani pojeciami wordnetowymi
-    val document1 = new Document(1, namedEntities_1, wordnetWords_1, otherWords_1)      // stworz dokument LDA dla devID=1, z powyzszych zbiorow slow
-    docs.add(document1)
-    println(document1)
-
-    var doc_2 = "bird species tits eating frogs ny central park cars pollution footprint save-planet.gov"
-    doc_2 = NLPUtils.removeUselessSuffixes(doc_2)
-    doc_2 = NLPUtils.removeSomePunctuation(doc_2)
-    val nerResult_2 = NLPUtils.markNamedEntities(doc_2)
-    val namedEntities_2 = nerResult_2.subList(1, nerResult_2.size())
-    val tokens_2 = NLPUtils.tokenize(nerResult_2.get(0))
-    var labels_2: util.List[CoreLabel] = NLPUtils.tagPartOfSpeech(tokens_2)
-    labels_2 = NLPUtils.lemmatize(labels_2)
-    labels_2 = NLPUtils.deleteStopWords(labels_2)
-    val words_2: util.List[String] = for (i <- labels_2.indices) yield labels_2.get(i).lemma()
-    val wordnetWords_2 = WordnetUtils.retrieveWordnetTerms(dict, words_2)
-    val otherWords_2: util.List[String] = for (w <- words_2 if !wordnetWords_2.contains(w)) yield w
-    val document2 = new Document(2, namedEntities_2, wordnetWords_2, otherWords_2)
-    docs.add(document2)
-    println(document2)
-
-    var doc_3 = "aol google.com hotels big   parks+new york   estates london . cars warsaw city?restaurant;eat:frogs france"
-    doc_3 = NLPUtils.removeUselessSuffixes(doc_3)
-    doc_3 = NLPUtils.removeSomePunctuation(doc_3)
-    val nerResult_3 = NLPUtils.markNamedEntities(doc_3)
-    val namedEntities_3 = nerResult_3.subList(1, nerResult_3.size())
-    val tokens_3 = NLPUtils.tokenize(nerResult_3.get(0))
-    var labels_3: util.List[CoreLabel] = NLPUtils.tagPartOfSpeech(tokens_3)
-    labels_3 = NLPUtils.lemmatize(labels_3)
-    labels_3 = NLPUtils.deleteStopWords(labels_3)
-    val words_3: util.List[String] = for (i <- labels_3.indices) yield labels_3.get(i).lemma()
-    val wordnetWords_3 = WordnetUtils.retrieveWordnetTerms(dict, words_3)
-    val otherWords_3: util.List[String] = for (w <- words_3 if !wordnetWords_3.contains(w)) yield w
-    val document3 = new Document(3, namedEntities_3, wordnetWords_3, otherWords_3)
-    docs.add(document3)
-    println(document3)
-
-    val numOfTopics = 4     // liczba tematow do zamodelowania
-    val lda = new TopicModel(numOfTopics, 50, 0.1, 0.01)  // stworz niewytrenowany model LDA
-    lda.train(docs, false)    // trenuj model LDA na zbiorze dokumentow 'docs' nie biorac pod uwage slow ze zbiorow 'pozostale'
-
-    println("Topics (top 5 words and their count):")
-    val dataAlphabet = lda.getAlphabet()
-    val topicSortedWords = lda.getTopicSortedWords()
-    for (i <- 0 until numOfTopics) {
-      print("Topic nr " + (i+1) + ": ")
-      val iterator = topicSortedWords.get(i).iterator()
-      var rank = 0
-      while (iterator.hasNext && rank < 5) {
-        val idCountPair = iterator.next()
-        print(dataAlphabet.lookupObject(idCountPair.getID()) + " (" + idCountPair.getWeight() + "), ")
-        rank += 1
-      }
-      println()
-    }
-
-    println("\nTopic distributions for documents:")
-    for (d <- docs) {
-      val probs = lda.getTopicDistributionByDevID(d.getDeviceID())
-      d.setTopicDistribution(probs)
-      print("Document nr " + d.getDeviceID() + ": ")
-      for (j <- 0 until numOfTopics) {
-        print(probs(j) + ", ")
-      }
-      println()
-    }
-
-    println("\nJS divergence:")
-    for (i <- 0 until docs.size()) {
-      for (j <- 0 until docs.size()) {
-        println("divJS(doc" + docs.get(i).getDeviceID() + "," + docs.get(j).getDeviceID() + ")= "
-          + MetricsUtils.divJS(docs.get(i).getTopicDistribution(), docs.get(j).getTopicDistribution()))
+    for (i <- MIN_DEVID to MAX_DEVID) {
+      val iterator = DeviceQueryDAO.getDeviceQueriesByDevice(i)
+      if (iterator.nonEmpty) {
+        val queries = new util.ArrayList[String]()
+        for (it <- iterator) queries.add(it.get("Query").asInstanceOf[String])
+        val document = prepareDocument(i, queries, dict)
+        docs.add(document)
       }
     }
+
+    Database.client.close()
+
+    val iterations = List[Int](50, 500, 1000, 1500, 2000)
+    //val alfa_beta = List[(Double,Double)]((0.01,0.1), (0.05,0.1), (0.1,0.1), (0.2,0.1), (0.05,0.002), (0.05,0.01), (0.05,1.0))
+
+    //for (ab <- alfa_beta) {
+    for (it <- iterations) {
+      val TOPICS_COUNT = 200
+      //val ITERATIONS = 500
+      val ITERATIONS = it
+      //val A = ab._1
+      //val B = ab._2
+      val A = 0.05
+      val B = 0.01
+      val WITH_OTHER_TERMS = false
+      val ADD_HYPERONYMS = false
+      val ADD_SYNONYMS = false
+
+      val name = "topics_" + TOPICS_COUNT + "_its_" + ITERATIONS + "_alfa_" + A + "_beta_" + B
+      val dir = new File("./src/main/resources/reports/" + name)
+      dir.mkdir()
+      val file = new File("./src/main/resources/reports/" + name + "/" + name + ".txt")
+      val logger = new PrintWriter(file)
+
+      logger.println("\nTrening modelu:")
+      logger.println("-- liczba tematow: " + TOPICS_COUNT)
+      logger.println("-- liczba iteracji: " + ITERATIONS)
+      logger.println("-- alfa: " + A)
+      logger.println("-- beta: " + B)
+      logger.println("-- modeluj dla 'pozostale': " + WITH_OTHER_TERMS)
+      logger.println("-- dodaj hiperonimy: " + ADD_HYPERONYMS)
+      logger.println("-- dodaj synonimy: " + ADD_SYNONYMS)
+
+      val lda = new TopicModel(TOPICS_COUNT, ITERATIONS, A, B)
+      lda.train(docs, WITH_OTHER_TERMS)
+
+      //    logger.println("\nRozkłady tematów dla dokumentów:")
+      for (d <- docs) {
+        val probs = lda.getTopicDistributionByDevID(d.getDeviceID())
+        d.setTopicDistribution(probs)
+        //      logger.print("Document nr " + d.getDeviceID() + ": ")
+        //      for (j <- 0 until TOPICS_COUNT) {
+        //        logger.print(probs(j) + ", ")
+        //      }
+        //      logger.println()
+      }
+
+      logger.println("Temat (top 15 słów):")
+      val dataAlphabet = lda.getAlphabet()
+      val topicSortedWords = lda.getTopicSortedWords()
+      for (i <- 0 until TOPICS_COUNT) {
+        logger.print("Temat nr " + i + ": ")
+        val iterator = topicSortedWords.get(i).iterator()
+        var rank = 0
+        while (iterator.hasNext && rank < 15) {
+          val idCountPair = iterator.next()
+          logger.print(dataAlphabet.lookupObject(idCountPair.getID()) + ",")
+          rank += 1
+        }
+        logger.println()
+      }
+
+      logger.close()
+
+      lda.writeDiagnosticsToXML(name + "/" + name + "_diagnostics")
+      lda.writeTopicXMLReport(name + "/" + name + "_topics_top15", 15)
+      lda.writeTopicPhraseXMLReport(name + "/" + name + "topics_phrases_top15", 15)
+    }
+
   }
 }

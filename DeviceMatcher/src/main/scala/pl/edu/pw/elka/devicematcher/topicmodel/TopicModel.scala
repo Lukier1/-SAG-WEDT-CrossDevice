@@ -1,17 +1,19 @@
 package pl.edu.pw.elka.devicematcher.topicmodel
 
+import java.io.{File, PrintWriter}
 import java.util
 
 import collection.JavaConversions._
 import cc.mallet.pipe.iterator.ArrayIterator
 import cc.mallet.pipe.{Pipe, SerialPipes, TokenSequence2FeatureSequence}
-import cc.mallet.topics.ParallelTopicModel
+import cc.mallet.topics.{ParallelTopicModel, TopicModelDiagnostics}
 import cc.mallet.types.{Alphabet, IDSorter, InstanceList, TokenSequence}
 
 /**
   * Created by dawid on 02.01.17.
   */
-class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) {
+@SerialVersionUID(100L)
+class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extends Serializable {
 
   /**
     * Liczba tematow do zamodelowania i liczba przebiegow algorytmu LDA
@@ -131,6 +133,49 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) {
       return null
     }
     model.getSortedWords()
+  }
+
+  /**
+    * Pisanie do pliku XML różnych danych diagnostycznych wytrenowanego modelu LDA.
+    * patrz: http://mallet.cs.umass.edu/diagnostics.php
+    *
+    * @param filename nazwa pliku wyjściowego
+    */
+  def writeDiagnosticsToXML(filename: String): Unit = {
+    val modelDiagnostics = new TopicModelDiagnostics(model, 7)
+    val xmlString = modelDiagnostics.toXML()
+    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val pw = new PrintWriter(file)
+    pw.println(xmlString)
+    pw.close()
+  }
+
+  /**
+    * Wygenerowanie informacji dotyczących zamodelowanych tematów LDA w postaci pliku (raportu) XML.
+    * patrz: http://mallet.cs.umass.edu/api/cc/mallet/topics/ParallelTopicModel.html#topicXMLReport(java.io.PrintWriter,%20int)
+    *
+    * @param filename nazwa pliku wyjściowego
+    * @param numWords maksymalna liczba najczęściej występujących słów w tematach jakie mają być umieszczone w wygenerowanym raporcie
+    */
+  def writeTopicXMLReport(filename: String, numWords: Int): Unit = {
+    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val pw = new PrintWriter(file)
+    model.topicXMLReport(pw, numWords)
+    pw.close()
+  }
+
+  /**
+    * Wygenerowanie informacji dotyczących zamodelowanych tematów LDA i fraz na nich składające się w postaci pliku (raportu) XML.
+    * patrz: http://mallet.cs.umass.edu/api/cc/mallet/topics/ParallelTopicModel.html#topicPhraseXMLReport(java.io.PrintWriter,%20int)
+    *
+    * @param filename nazwa pliku wyjściowego
+    * @param numWords maksymalna liczba najczęściej występujących słów w tematach jakie mają być umieszczone w wygenerowanym raporcie
+    */
+  def writeTopicPhraseXMLReport(filename: String, numWords: Int): Unit = {
+    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val pw = new PrintWriter(file)
+    model.topicPhraseXMLReport(pw, numWords)
+    pw.close()
   }
 
 }
