@@ -116,7 +116,8 @@ object NLPUtils {
     val tokens = new util.ArrayList[String]()
     while (ptbt.hasNext()) {
       val label = ptbt.next()
-      tokens.add(label.toString())
+      if (label.toString.length > 1)
+        tokens.add(label.toString())
     }
     tokens
   }
