@@ -19,7 +19,7 @@ class IDServeActor(workersNumber : Int) extends Actor {
   import IDServeActor._
 
   //Router do rozsyłania wiadomości,
-  val workerRouter : ActorRef = context.actorOf(RoundRobinPool(WORKER_NUMBER).props(Props(classOf[NLPProxyActor], self)))
+  val workerRouter : ActorRef = context.actorOf(BalancingPool(WORKER_NUMBER).props(Props(classOf[NLPProxyActor], self)))
   var deviceNumber  : Int =  0
   var processedDevices : Int = 0
 
@@ -30,7 +30,7 @@ class IDServeActor(workersNumber : Int) extends Actor {
     case RangeID(begin, end) =>
       systemSender = sender()
       deviceNumber = end-begin
-      splitID(begin,end)
+      splitID(begin,end+1)
     case Success(_ : Int) =>
       deviceNumber += 1
       if(processedDevices >= 0.999 * deviceNumber) // Gdy zostanie przetworzone 0.999 wysyła wiadomośc potwierdzającą

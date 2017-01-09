@@ -16,13 +16,14 @@ class NLPWorkerActor extends Actor {
 
   //Funkcja przetwarzajaca
   def processing(id : Int) : Unit = {
-
+      println(s"NLP Processing $id")
   }
 
   //Odbieramy polecenie przetwarzania
   override def receive: Receive = {
     case DeviceIDProc(devId) =>
       try {
+        processing(devId)
         sender() ! IDServeActor.Success(devId)
       }
       catch {
