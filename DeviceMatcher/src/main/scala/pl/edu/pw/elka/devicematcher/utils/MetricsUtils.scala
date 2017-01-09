@@ -53,4 +53,66 @@ object MetricsUtils {
     (pm+qm)/2.0
   }
 
+  /**
+    * Obliczenie precyzji
+    *
+    * @param tp True Positive - "with hit"
+    * @param fp False Positive - "false alarm"
+    * @return precyzja (precision / positive predictive value / probability of detection)
+    */
+  def precision(tp: Int, fp: Int): Double = {
+    val precision = tp.toDouble / (tp + fp)
+    precision
+  }
+
+  /**
+    * Obliczenie czułości / pokrycia
+    *
+    * @param tp True Positive - "with hit"
+    * @param fn False Negative - "with miss"
+    * @return czułość (recall / sensitivity / hit rate / true positive rate)
+    */
+  def recall(tp: Int, fn: Int): Double = {
+    val recall = tp.toDouble / (tp + fn)
+    recall
+  }
+
+  /**
+    * Obliczenie specyficzności
+    *
+    * @param tn True Negative - "with correct rejection"
+    * @param fp False Positive - "false alarm"
+    * @return specyficzność (specificity / true negative rate)
+    */
+  def specificity(tn: Int, fp: Int): Double = {
+    val specificity = tn.toDouble / (fp + tn)
+    specificity
+  }
+
+  /**
+    * Obliczenie dokładności
+    *
+    * @param tp True Positive - "with hit"
+    * @param fp False Positive - "false alarm"
+    * @param tn True Negative - "with correct rejection"
+    * @param fn False Negative - "with miss"
+    * @return dokładność (accuracy)
+    */
+  def accuracy(tp: Int, fp: Int, tn: Int, fn: Int): Double = {
+    val accuracy = (tp + tn).toDouble / (tp + tn + fp + fn)
+    accuracy
+  }
+
+  /**
+    * Obliczenie współczynnika/miary F
+    *
+    * @param precision
+    * @param recall
+    * @return miara F (F-measure / F1-score / harmonic mean of precision and sensitivity)
+    */
+  def f_measure(precision: Double, recall: Double): Double = {
+    val f = 2 * precision * recall / (precision + recall)
+    f
+  }
+
 }

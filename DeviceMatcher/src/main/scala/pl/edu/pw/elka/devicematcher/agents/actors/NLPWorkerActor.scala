@@ -4,6 +4,8 @@ import akka.actor.Actor
 import akka.actor.Actor.Receive
 
 /**
+  * Aktor przetwarzajacy NLP dane Device ID
+  *
   * Created by lukier on 1/7/17.
   */
 object NLPWorkerActor {
@@ -11,8 +13,23 @@ object NLPWorkerActor {
 }
 class NLPWorkerActor extends Actor {
   import NLPWorkerActor._
+
+  //Funkcja przetwarzajaca
+  def processing(id : Int) : Unit = {
+
+  }
+
+  //Odbieramy polecenie przetwarzania
   override def receive: Receive = {
-    case DeviceIDProc(devId) => println(s"Process device number: $devId")
+    case DeviceIDProc(devId) =>
+      try {
+        sender() ! IDServeActor.Success(devId)
+      }
+      catch {
+        case e : Exception =>
+          println(s"Error msg for $devId is $e" )
+          sender() !  IDServeActor.Failed(devId)
+      }
     case _ => println("NLPWorker - Undefined msg.")
   }
 }
