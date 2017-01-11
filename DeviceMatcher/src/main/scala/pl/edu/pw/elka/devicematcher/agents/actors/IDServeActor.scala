@@ -17,13 +17,13 @@ object IDServeActor {
     val WORKER_NUMBER = 10
     case class Success(id : Int)
     case class Failed(id : Int)
-
-    val TO_FILE = true
-    val TO_STDOUT = true
-    val logger = DevMatchLogger.getLogger("IDServeActor", log4j.Level.DEBUG, TO_FILE, "idserveactor.log", TO_STDOUT)
 }
 class IDServeActor(workersNumber : Int) extends Actor {
   import IDServeActor._
+
+  val TO_FILE = true
+  val TO_STDOUT = true
+  val logger = DevMatchLogger.getLogger("IDServeActor", log4j.Level.DEBUG, TO_FILE, "idserveactor.log", TO_STDOUT)
 
   //Router do rozsyłania wiadomości,
   val workerRouter : ActorRef = context.actorOf(BalancingPool(WORKER_NUMBER).props(Props(classOf[NLPProxyActor], self)))

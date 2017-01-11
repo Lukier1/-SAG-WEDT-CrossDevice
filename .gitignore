@@ -22,6 +22,9 @@ target
 .idea
 out
 
+# logs:
+resources/logs/
+
 # sbt specific
 .cache/
 .history/

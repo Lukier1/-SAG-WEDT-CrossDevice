@@ -19,10 +19,6 @@ import scala.concurrent.Await
   */
 object  NLPProxyActor {
   val MAX_TRIES = 5
-
-  val TO_FILE = true
-  val TO_STDOUT = true
-  val logger = DevMatchLogger.getLogger("NLPProxyActor", log4j.Level.DEBUG, TO_FILE, "nlpproxy.log", TO_STDOUT)
 }
 
 class NLPProxyActor(root : ActorRef) extends Actor {
@@ -31,7 +27,9 @@ class NLPProxyActor(root : ActorRef) extends Actor {
   var tries : Int = 0
   var id_act = 0
 
-  import NLPProxyActor.logger
+  val TO_FILE = true
+  val TO_STDOUT = true
+  val logger = DevMatchLogger.getLogger("NLPProxyActor", log4j.Level.DEBUG, TO_FILE, "nlpproxy.log", TO_STDOUT)
 
   //Odbior polecenia przetwarzania
   override def receive: Receive = {

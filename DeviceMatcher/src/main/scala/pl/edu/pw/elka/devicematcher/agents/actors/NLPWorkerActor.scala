@@ -16,16 +16,16 @@ import pl.edu.pw.elka.devicematcher.utils.{DevMatchLogger, WordnetUtils}
   */
 object NLPWorkerActor {
   case class DeviceIDProc(deviceId : Int)
-
-  val TO_FILE = true
-  val TO_STDOUT = true
-  val logger = DevMatchLogger.getLogger("NLPWorkerActor", log4j.Level.DEBUG, TO_FILE, "nlpworkers.log", TO_STDOUT)
 }
 class NLPWorkerActor extends Actor {
   import NLPWorkerActor._
 
   private val dict = WordnetUtils.getDictionary()
   dict.open()
+
+  val TO_FILE = true
+  val TO_STDOUT = true
+  val logger = DevMatchLogger.getLogger("NLPWorkerActor", log4j.Level.DEBUG, TO_FILE, "nlpworkers.log", TO_STDOUT)
 
   //Funkcja przetwarzajaca
   def processing(id : Int) : Unit = {
