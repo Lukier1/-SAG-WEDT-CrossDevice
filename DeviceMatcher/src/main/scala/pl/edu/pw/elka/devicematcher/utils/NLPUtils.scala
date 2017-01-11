@@ -41,7 +41,7 @@ object NLPUtils {
   }
 
   /**
-    * Przyrostki, ktore moga sie czesto pojawic a powinny byc usuniete w przetarzaniu wstepnym zapytan
+    * Przyrostki, ktore moga sie czesto pojawic a powinny byc usuniete w przetwarzaniu wstepnym zapytan
     */
   private val uselessSuffixes = Array(".com", ".org", ".net", ".edu", ".gov", "www.", "ww.", ".uk", ".de", ".es", ".eu", ".gf", ".pl", ".us", ".rus", ".ru")
 

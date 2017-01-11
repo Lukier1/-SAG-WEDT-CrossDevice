@@ -27,12 +27,12 @@ object DocumentDAO {
   }
 
   /**
-    * Nazwa koleckji
+    * Nazwa kolekcji
     */
   private val DOCUMENT_COLLECTION_NAME = "Document"
 
   /**
-    * Ddoaje dokument do bazy
+    * Dodaje dokument do bazy
     *
     * @param document dokument
     */
@@ -44,6 +44,24 @@ object DocumentDAO {
       Columns.WORDNET_TERMS -> getWordnetTermsFromDocument(document),
       Columns.OTHER_TERMS -> getOtherTermsFromDocument(document))
     collection.insert(docObj)
+  }
+
+  /**
+    * Dodaje dokumenty do bazy
+    *
+    * @param docs lista dokumentow
+    */
+  def addDocuments(docs: util.List[Document]): Unit = {
+    val collection = Database.db(DOCUMENT_COLLECTION_NAME)
+    val builder = collection.initializeUnorderedBulkOperation
+    for (d <- docs) {
+      val docObj = MongoDBObject(Columns.DEVICE_ID -> d.getDeviceID(),
+        Columns.NAMED_ENTITIES -> getNamedEntitiesFromDocument(d),
+        Columns.WORDNET_TERMS -> getWordnetTermsFromDocument(d),
+        Columns.OTHER_TERMS -> getOtherTermsFromDocument(d))
+      builder.insert(docObj)
+    }
+    builder.execute()
   }
 
   /**
