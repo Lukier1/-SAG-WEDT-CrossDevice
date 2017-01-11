@@ -51,12 +51,12 @@ class NLPWorkerActor extends Actor {
       catch {
         case e : Exception =>
           //println(s"Error msg for $devId is $e" )
-          logger.error(s"Error message for $devId is: $e")
+          //logger.error(s"Error message for $devId is: $e") // To powoduje blad
           sender() !  IDServeActor.Failed(devId)
       }
     case _ =>
       //println("NLPWorker - Undefined msg.")
-      logger.error("Undefined message received.")
+     // logger.error("Undefined message received.")
   }
 
 }
