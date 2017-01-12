@@ -7,7 +7,7 @@ import edu.mit.jwi.IDictionary
 import edu.stanford.nlp.ling.CoreLabel
 import pl.edu.pw.elka.devicematcher.data.{Database, DeviceQueryDAO}
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel}
-import pl.edu.pw.elka.devicematcher.utils.{NLPUtils, WordnetUtils}
+import pl.edu.pw.elka.devicematcher.utils.{Group, MatcherUtils, NLPUtils, WordnetUtils}
 
 import scala.collection.JavaConversions._
 
@@ -52,13 +52,13 @@ object DeviceMatcherApp extends App {
   /**
     * Serializacja i zapis danego modelu LDA do pliku.
     *
-    * @param model model LDA do zapisu
+    * @param model    model LDA do zapisu
     * @param filename nazwa pliku
     * @return true jeśli zapis powiódł się, false w p.p.
     */
   def writeTopicModelToFile(model: TopicModel, filename: String): Boolean = {
     try {
-      val oos =  new ObjectOutputStream(new FileOutputStream("./src/main/resources/models/" + filename))
+      val oos = new ObjectOutputStream(new FileOutputStream("./src/main/resources/models/" + filename))
       oos.writeObject(model)
       oos.close()
       return true
@@ -88,7 +88,7 @@ object DeviceMatcherApp extends App {
 
   override def main(args: Array[String]): Unit = {
     val MIN_DEVID = 1
-    val MAX_DEVID = 1000
+    val MAX_DEVID = 200
 
     val dict = WordnetUtils.getDictionary()
     dict.open()
@@ -112,7 +112,7 @@ object DeviceMatcherApp extends App {
 
     //for (ab <- alfa_beta) {
     for (it <- iterations) {
-      val TOPICS_COUNT = 200
+      val TOPICS_COUNT = 20
       //val ITERATIONS = 500
       val ITERATIONS = it
       //val A = ab._1
@@ -169,9 +169,25 @@ object DeviceMatcherApp extends App {
 
       logger.close()
 
-      lda.writeDiagnosticsToXML(name + "/" + name + "_diagnostics")
-      lda.writeTopicXMLReport(name + "/" + name + "_topics_top15", 15)
-      lda.writeTopicPhraseXMLReport(name + "/" + name + "topics_phrases_top15", 15)
+      /**
+        * Test progów dywergencji
+        * Wyniki w "resources/groups/trimmed" i "resources/groups/untrimmed"
+        * Należy najpierw te foldery stworzyć
+        */
+      var threshold = 0.001
+      while (threshold < 0.3) {
+        var groups = MatcherUtils.getUntrimmedGroups(docs, threshold, groupMembersSize = 3)
+        MatcherUtils.writeGroupsToFile(groups, "groups:" + threshold + ".txt", trimmed = false)
+
+        groups = MatcherUtils.trimGroups(threshold, groups, groupMembersSize = 3)
+        MatcherUtils.writeGroupsToFile(groups, "groups:" + threshold + ".txt", trimmed = true)
+        threshold += 0.010
+      }
+
+
+      /*      lda.writeDiagnosticsToXML(name + "/" + name + "_diagnostics")
+            lda.writeTopicXMLReport(name + "/" + name + "_topics_top15", 15)
+            lda.writeTopicPhraseXMLReport(name + "/" + name + "topics_phrases_top15", 15)*/
     }
 
   }
