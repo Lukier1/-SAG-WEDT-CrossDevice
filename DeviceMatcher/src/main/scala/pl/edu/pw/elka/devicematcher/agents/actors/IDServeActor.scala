@@ -44,7 +44,8 @@ class IDServeActor(workersNumber : Int) extends Actor {
     case Success(_ : Int) =>
       processedDevices += 1
       logger.info("Doc processed. Remaining: " + (deviceNumber-processedDevices))
-      if(processedDevices >= 0.999 * deviceNumber) // Gdy zostanie przetworzone 0.999 wysyła wiadomośc potwierdzającą
+      //if (processedDevices >= 0.999 * deviceNumber) // Gdy zostanie przetworzone 0.999 wysyła wiadomośc potwierdzającą
+      if (processedDevices >= deviceNumber)
       {
         logger.debug("0.999 devices has been processed -> sending 'done'...")
         systemSender ! "done"

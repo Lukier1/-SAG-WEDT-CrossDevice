@@ -16,6 +16,11 @@ import cc.mallet.types.{Alphabet, IDSorter, InstanceList, TokenSequence}
 class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extends Serializable {
 
   /**
+    * Sciezka zapisu danych diagnostycznych topic modelu (pliki XML):
+    */
+  private val DIAGNOSTICS_REPORTS_DIR = "./src/main/resources/reports/"
+
+  /**
     * Liczba tematow do zamodelowania i liczba przebiegow algorytmu LDA
     */
   private val topicsCount: Int = numOfTopics
@@ -144,7 +149,7 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
   def writeDiagnosticsToXML(filename: String): Unit = {
     val modelDiagnostics = new TopicModelDiagnostics(model, 7)
     val xmlString = modelDiagnostics.toXML()
-    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val file = new File(DIAGNOSTICS_REPORTS_DIR + filename + ".xml")
     val pw = new PrintWriter(file)
     pw.println(xmlString)
     pw.close()
@@ -158,7 +163,7 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     * @param numWords maksymalna liczba najczęściej występujących słów w tematach jakie mają być umieszczone w wygenerowanym raporcie
     */
   def writeTopicXMLReport(filename: String, numWords: Int): Unit = {
-    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val file = new File(DIAGNOSTICS_REPORTS_DIR + filename + ".xml")
     val pw = new PrintWriter(file)
     model.topicXMLReport(pw, numWords)
     pw.close()
@@ -172,7 +177,7 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     * @param numWords maksymalna liczba najczęściej występujących słów w tematach jakie mają być umieszczone w wygenerowanym raporcie
     */
   def writeTopicPhraseXMLReport(filename: String, numWords: Int): Unit = {
-    val file = new File("./src/main/resources/reports/" + filename + ".xml")
+    val file = new File(DIAGNOSTICS_REPORTS_DIR + filename + ".xml")
     val pw = new PrintWriter(file)
     model.topicPhraseXMLReport(pw, numWords)
     pw.close()
