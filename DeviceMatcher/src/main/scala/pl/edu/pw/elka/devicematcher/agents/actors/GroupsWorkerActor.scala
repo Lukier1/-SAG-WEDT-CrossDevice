@@ -24,7 +24,16 @@ class GroupsWorkerActor extends Actor{
 
     case ProcessForID(id: Int, list: util.List[Document]) => {
       try {
-        val outGroups = MatcherUtils.getUntrimmedGroups(list, GroupsServingActor.THRESHOLD, id)
+
+        var range = GroupsServingActor.SIZE_OF_BUCKET;
+        val diff = list.size()-id;
+        if(diff < GroupsServingActor.SIZE_OF_BUCKET)
+          {
+            range = diff;
+          }
+        val outGroups = MatcherUtils.getUntrimmedGroups(list, GroupsServingActor.THRESHOLD, id, range = range)
+        LOGGER.debug(s"Process device id $id for range $range");
+        LOGGER.debug(s"Group for this $outGroups");
         sender() ! Success(outGroups)
       }
       catch {

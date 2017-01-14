@@ -22,6 +22,8 @@ object GroupsServingActor {
   val THRESHOLD = 0.3f
 
   val WORKER_NUMBER = 10
+
+  val SIZE_OF_BUCKET = 4
 }
 
 class GroupsServingActor( _docs : util.List[Document]) extends Actor  {
@@ -66,12 +68,16 @@ class GroupsServingActor( _docs : util.List[Document]) extends Actor  {
       }
     }
     val end : Int = calcEnd() //TODO: Wie ktoś jak to skrócić? Tak żeby za = była funkcja anonimowa
-    numberToProcess = end;
 
-    for (idDocs <-0 until numberToProcess+1) {
+    val rounds = Math.floor((end+1)/SIZE_OF_BUCKET);
+
+    numberToProcess = rounds.toInt;
+
+
+    for (idDocs <-0 until rounds.toInt+1) {
 
       LOGGER.debug(s"Processing $idDocs");
-      workerRouter ! ProcessForID(idDocs, docs)
+      workerRouter ! ProcessForID(idDocs*SIZE_OF_BUCKET, docs)
 
     }
 
