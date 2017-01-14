@@ -1,5 +1,6 @@
 package pl.edu.pw.elka.devicematcher.utils
 
+import akka.event.Logging.Debug
 import org.apache.log4j
 
 /**
@@ -31,6 +32,26 @@ object DevMatchLogger {
       logger.addAppender(getFileAppender(name, level, LOG_DIR + filename))
     if (logToStdout)
       logger.addAppender(getStdoutAppender())
+    logger
+  }
+
+  /**
+    * Metoda-skrot: tworzy loggera z domyslnym formatem i sciezka zapisu plikow logu.
+    *
+    * @param name nazwa loggera używana jako identyfikator
+    * @param filename nazwa pliku logu zapisywanego w LOG_DIR
+    * @param level obsługiwany poziom logowania log4j: ALL, DEBUG, ERROR, FATAL, INFO, TRACE, WARN, OFF
+    * @return stworzony logger lub null
+    */
+  def getLogger(name: String, filename : String = "DeviceMatherApp.log", level : log4j.Level = log4j.Level.DEBUG): log4j.Logger = {
+    if (name == null || name.isEmpty() || filename == null || filename.isEmpty())
+      return null
+    val logger = log4j.Logger.getLogger(name)
+    logger.setAdditivity(false)
+
+    logger.addAppender(getFileAppender(name, level, LOG_DIR + filename ))
+
+    logger.addAppender(getStdoutAppender())
     logger
   }
 
