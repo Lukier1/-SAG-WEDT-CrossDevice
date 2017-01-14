@@ -48,7 +48,7 @@ object DevMatchLogger {
       return null
     val logger = log4j.Logger.getLogger(name)
     logger.setAdditivity(false)
-
+    logger.setLevel(level);
     logger.addAppender(getFileAppender(name, level, LOG_DIR + filename ))
 
     logger.addAppender(getStdoutAppender())

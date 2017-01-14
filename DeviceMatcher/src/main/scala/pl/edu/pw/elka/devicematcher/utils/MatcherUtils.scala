@@ -37,8 +37,8 @@ object MatcherUtils {
 
       var tmpThreshold = threshold
       for (j <- 0 until docs.size() if docs(j).getDeviceID() != docs(i).getDeviceID()) {
-        val div = MetricsUtils.divJS(docs.get(i).getTopicDistribution(), docs.get(j).getTopicDistribution())
-        //val div = FakeJSDivergence.divJS(docs.get(i).getDeviceID(), docs.get(j).getDeviceID())
+        //val div = MetricsUtils.divJS(docs.get(i).getTopicDistribution(), docs.get(j).getTopicDistribution())
+        val div = FakeJSDivergence.divJS(docs.get(i).getDeviceID(), docs.get(j).getDeviceID())
         if (div < tmpThreshold) {
           val thr = insertToSortedList(cacheGroup.members, new DocumentPair(docs.get(j).getDeviceID(), div), groupMembersSize)
           if (thr != 1.0)
