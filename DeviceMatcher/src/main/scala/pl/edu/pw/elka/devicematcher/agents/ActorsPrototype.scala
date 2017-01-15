@@ -24,7 +24,7 @@ object ActorsPrototype  extends App {
 
     val actorsSystem = ActorSystem("System");
     //val rootActor = actorsSystem.actorOf(Props(classOf[IDServeActor],5))
-    val testList : util.List[Document] = MatcherDataTest.docs
+    val testList : util.List[Document] = MatcherDataTest.toTrimDocs
 
     val result = MatcherUtils.getUntrimmedGroups(testList, 0.3);
     println("Out of function : \n" + result)

@@ -1,15 +1,22 @@
 package pl.edu.pw.elka.devicematcher
 
 import java.util
+
 import org.apache.log4j
-import pl.edu.pw.elka.devicematcher.data.{Database, DocumentDAO}
+import pl.edu.pw.elka.devicematcher.data.{AnonDeviceDAO, Database, DocumentDAO}
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel, TopicModelSerializer}
 import akka.actor.{ActorSystem, Props}
 import pl.edu.pw.elka.devicematcher.agents.actors.IDServeActor
 import akka.pattern.ask
-import pl.edu.pw.elka.devicematcher.utils.DevMatchLogger
+import pl.edu.pw.elka.devicematcher.utils._
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import java.io._
+import java.util
+
+
+import scala.collection.JavaConversions._
 
 
 object DeviceMatcherApp extends App {
@@ -94,6 +101,28 @@ object DeviceMatcherApp extends App {
 
     if (DO_STAGE_4)
       evaluateFoundConnections()
+
+    /**
+      * przykład użycia metryk,
+      * zakres od 9 do 15 z powodu brakujących urządzeń w bazie
+      */
+//    val docs = MatcherDataTest.metcicsDocs
+//    FakeJSDivergence.isMetrics=true
+//    var groups = MatcherUtils.getUntrimmedGroups(docs, 0.3, groupMembersSize = 3)
+//
+//    groups = MatcherUtils.trimGroups(0.3, groups, groupMembersSize = 3)
+//    MatcherUtils.writeGroupsToFile(groups, "groups:" + 0.3 + "metrics.txt", trimmed = false)
+//
+//    val metrics = MetricsUtils.getBasicMetrics(groups,9,7)
+//
+//    logger.debug("Metrics: ")
+//    logger.debug("True Positives: "+metrics(0))
+//    logger.debug("False Positives: "+metrics(1))
+//    logger.debug("True Negatives: "+metrics(2))
+//    logger.debug("False Negatives: "+metrics(3))
+//    logger.debug("Accuracy: "+MetricsUtils.accuracy(metrics(0),metrics(1),metrics(2),metrics(3)))
+//    logger.debug("Precision: "+MetricsUtils.precision(metrics(0),metrics(1)))
+//    logger.debug("Recall: "+MetricsUtils.recall(metrics(0),metrics(3)))
 
     Database.client.close()
   }

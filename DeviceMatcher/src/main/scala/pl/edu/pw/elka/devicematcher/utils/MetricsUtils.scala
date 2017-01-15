@@ -1,6 +1,9 @@
 package pl.edu.pw.elka.devicematcher.utils
 
+import pl.edu.pw.elka.devicematcher.data.{AnonDeviceDAO, DeviceQueryDAO}
+
 import scala.collection.JavaConversions._
+import java.util
 
 /**
   * Created by dawid on 02.01.17.
@@ -113,6 +116,50 @@ object MetricsUtils {
   def f_measure(precision: Double, recall: Double): Double = {
     val f = 2 * precision * recall / (precision + recall)
     f
+  }
+
+  /** Wylicza podstawowe metryki dopasowania.
+    *
+    * @param groups grupy przyporządkowane przez algorytm grupowania urządzeń
+    * @return lista metryk, kolejno: positives, falsePositives, negatives, falseNegatives
+    */
+  def getBasicMetrics(groups: util.List[Group], startIndex:Int=0, range: Int=0): util.List[Int] = {
+    val maxDeviceId = AnonDeviceDAO.getMaxDeviceId()
+    val length = if (range == 0) maxDeviceId else range+startIndex
+    if (length>maxDeviceId)
+      throw new IllegalArgumentException("Range :"+length+" is too big for AnonDevices collection size: "+maxDeviceId)
+
+    var falsePositives = 0
+    var falseNegatives = 0
+    var positives = 0
+    var negatives = 0
+    for (i <- startIndex until length) {
+      val anonId = AnonDeviceDAO.getAnonIdForDevice(i)
+      if (anonId != -1) {
+        var group: Group = null
+        for (g <- groups) {
+          if (g.containsDevId(i) || g.devId == i) {
+            group = g
+          }
+        }
+        for (j <- startIndex until length if i != j && group!=null) {
+          val otherAnonId = AnonDeviceDAO.getAnonIdForDevice(j)
+          if (otherAnonId != -1) {
+            val isInTheSameGroup = group.containsDevId(j) || group.devId == j
+            val hasTheSameUser = anonId == AnonDeviceDAO.getAnonIdForDevice(j)
+            if (isInTheSameGroup && !hasTheSameUser)
+              falsePositives += 1
+            else if (!isInTheSameGroup && hasTheSameUser)
+              falseNegatives += 1
+            else if (isInTheSameGroup && hasTheSameUser)
+              positives += 1
+            else if (!isInTheSameGroup && !hasTheSameUser)
+              negatives += 1
+          }
+        }
+      }
+    }
+    new util.LinkedList[Int](List(positives, falsePositives, negatives, falseNegatives))
   }
 
 }

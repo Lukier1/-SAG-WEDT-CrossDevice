@@ -250,6 +250,7 @@ class Group(deviceId: Int, deleted: Boolean = false) {
 }
 
 object FakeJSDivergence {
+  var isMetrics = false
   private val divTable: Array[Array[Double]] = Array(
     //             q:    0     1     2     3     4     5     6    //p:
     Array[Double](/*0*/ 1.0,  1.0,  1.0,  1.0,  1.0, 1.0, 1.0), //0
@@ -263,7 +264,9 @@ object FakeJSDivergence {
   )
 
   def divJS(p: Int, q: Int): Double = {
-    val ret = if (p >= q) divTable(p)(q) else divTable(q)(p)
+    val p1 = if(isMetrics) p%9 else p
+    val q1 = if(isMetrics) q%9 else q
+    val ret = if (p1 >= q1) divTable(p1)(q1) else divTable(q1)(p1)
     ret
   }
 }
