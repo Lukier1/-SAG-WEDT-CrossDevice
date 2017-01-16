@@ -23,13 +23,13 @@ object MetricsUtils {
     * @return Wartosc dywergencji (Double)
     */
   @throws(classOf[IllegalArgumentException])
-  def divKL(p: Array[Double], q: Array[Double]): Double = {
+  def divKL(p: Array[Float], q: Array[Float]): Double = {
     if (p.length != q.length)
       throw new IllegalArgumentException
     var div = 0.0
     for (i <- p.indices) {
-      val qv = if (q(i) < 0.0000001) 0.0000001 else q(i)
-      val pv = if (p(i) < 0.0000001) 0.0000001 else p(i)
+      val qv = if (q(i) < 0.0000001f) 0.0000001f else q(i)
+      val pv = if (p(i) < 0.0000001f) 0.0000001f else p(i)
       div += p(i) * log2(pv/qv)
     }
     div
@@ -44,12 +44,12 @@ object MetricsUtils {
     * @return Wartosc dywergencji (Double)
     */
   @throws(classOf[IllegalArgumentException])
-  def divJS(p: Array[Double], q: Array[Double]): Double = {
+  def divJS(p: Array[Float], q: Array[Float]): Double = {
     if (p.length != q.length)
       throw new IllegalArgumentException
-    val m = new Array[Double](p.length)
+    val m = new Array[Float](p.length)
     for (i <- m.indices) {
-      m(i) = (p(i)+q(i))/2.0
+      m(i) = (p(i)+q(i))/2.0f
     }
     val pm = divKL(p, m)
     val qm = divKL(q, m)

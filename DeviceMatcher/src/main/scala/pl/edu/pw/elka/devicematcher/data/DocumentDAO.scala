@@ -24,6 +24,7 @@ object DocumentDAO {
     val NAMED_ENTITIES = "namedEntites"
     val WORDNET_TERMS = "wordnetTerms"
     val OTHER_TERMS = "otherTerms"
+    val TOPIC_DIST = "topicDistribution"
   }
 
   /**
@@ -32,13 +33,20 @@ object DocumentDAO {
   private val DOCUMENT_COLLECTION_NAME = "Document"
 
   /**
-    * Dodaje dokument do bazy
+    * Czysci kolekcje Document
+    */
+  def clearCollection(): Unit = {
+    val collection = Database.db(DOCUMENT_COLLECTION_NAME)
+    collection.drop()
+  }
+
+  /**
+    * Dodaje dokument do bazy (bez topicDistribution)
     *
     * @param document dokument
     */
   def addDocument(document: Document): Unit = {
     val collection = Database.db(DOCUMENT_COLLECTION_NAME)
-
     val docObj = MongoDBObject(Columns.DEVICE_ID -> document.getDeviceID(),
       Columns.NAMED_ENTITIES -> getNamedEntitiesFromDocument(document),
       Columns.WORDNET_TERMS -> getWordnetTermsFromDocument(document),
@@ -47,7 +55,7 @@ object DocumentDAO {
   }
 
   /**
-    * Dodaje dokumenty do bazy
+    * Dodaje dokumenty do bazy (bez topicDistribution)
     *
     * @param docs lista dokumentow
     */
@@ -62,6 +70,18 @@ object DocumentDAO {
       builder.insert(docObj)
     }
     builder.execute()
+  }
+
+  /**
+    * Aktualizuje dokument o danym devId o topicDist.
+    *
+    * @param devId
+    * @param topicDist rozklad tematow zapytan dla dokumentu
+    */
+  def updateDocument(devId: Int, topicDist: Array[Float]): Unit = {
+    val collection = Database.db(DOCUMENT_COLLECTION_NAME)
+    val query = MongoDBObject(Columns.DEVICE_ID -> devId)
+    collection.update(query, MongoDBObject("$set" -> MongoDBObject(Columns.TOPIC_DIST -> topicDist)))
   }
 
   /**
@@ -97,6 +117,19 @@ object DocumentDAO {
   }
 
   /**
+    * Zwraca dokumenty o devId z zakresu < minDevId, maxDevId >
+    *
+    * @param minDevId od
+    * @param maxDevId do
+    * @return iterator po rezultacie zapytania
+    */
+  def getDocumentsFromRange(minDevId: Int, maxDevId: Int): Iterator[DBObject] = {
+    val collection: MongoCollection = Database.db(DOCUMENT_COLLECTION_NAME)
+    val iterator = collection.find(Columns.DEVICE_ID $gte minDevId $lte maxDevId)
+    iterator
+  }
+
+  /**
     * Zwraca JEDEN! obiekt zawierający podany deviceId
     *
     * @param deviceId deviceId dokumentu
@@ -117,13 +150,19 @@ object DocumentDAO {
     * @return obiekt klasy Document
     */
   def fromDBObjectToDocument(dBObject: DBObject): Document = {
-    var namedEntitiesArr: util.List[String] = seqAsJavaList(dBObject.get(Columns.NAMED_ENTITIES).toString.split(","))
-    var wordnetTerms: util.List[String] = seqAsJavaList(dBObject.get(Columns.WORDNET_TERMS).toString.split(","))
-    var otherTerms: util.List[String] = seqAsJavaList(dBObject.get(Columns.OTHER_TERMS).toString.split(","))
-    new Document(Integer.parseInt(dBObject.get(Columns.DEVICE_ID).toString),
+    val namedEntitiesArr: util.List[String] = seqAsJavaList(dBObject.get(Columns.NAMED_ENTITIES).toString.split(","))
+    val wordnetTerms: util.List[String] = seqAsJavaList(dBObject.get(Columns.WORDNET_TERMS).toString.split(","))
+    val otherTerms: util.List[String] = seqAsJavaList(dBObject.get(Columns.OTHER_TERMS).toString.split(","))
+    val lst = dBObject.getAs[MongoDBList](Columns.TOPIC_DIST)
+    var topicDist: Array[Float] = null
+    if (lst != null && lst != None)
+      topicDist = lst.get.map(_.asInstanceOf[Number].floatValue()).toArray
+    val doc = new Document(Integer.parseInt(dBObject.get(Columns.DEVICE_ID).toString),
       namedEntitiesArr,
       wordnetTerms,
       otherTerms)
+    doc.setTopicDistribution(topicDist)
+    doc
   }
 
   private def getNamedEntitiesFromDocument(document: Document): String = {
@@ -137,4 +176,5 @@ object DocumentDAO {
   private def getOtherTermsFromDocument(document: Document): String = {
     document.getOtherTerms().asScala.toList.flatMap(Option[String]).filter(_ != null).mkString(",")
   }
+
 }

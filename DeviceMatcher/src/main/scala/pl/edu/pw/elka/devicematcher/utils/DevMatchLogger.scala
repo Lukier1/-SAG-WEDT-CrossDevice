@@ -43,7 +43,7 @@ object DevMatchLogger {
     * @param level obsługiwany poziom logowania log4j: ALL, DEBUG, ERROR, FATAL, INFO, TRACE, WARN, OFF
     * @return stworzony logger lub null
     */
-  def getLogger(name: String, filename : String = "DeviceMatherApp.log", level : log4j.Level = log4j.Level.DEBUG): log4j.Logger = {
+  def getLogger(name: String, filename : String = "DeviceMatcherApp.log", level : log4j.Level = log4j.Level.DEBUG): log4j.Logger = {
     if (name == null || name.isEmpty() || filename == null || filename.isEmpty())
       return null
     val logger = log4j.Logger.getLogger(name)

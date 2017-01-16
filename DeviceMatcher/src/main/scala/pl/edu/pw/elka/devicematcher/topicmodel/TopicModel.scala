@@ -51,9 +51,13 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     * Trenuje model LDA na zadanym zbiorze dokumentow
     *
     * @param documents Lista dokumentow
+    * @param threads liczba watkow algorytmu LDA
     * @param withOtherTerms Flaga wlaczenia w modelowanie slow dokumentow ze zbioru 'pozostale'
     */
-  def train(documents: util.List[Document], withOtherTerms: Boolean): Unit = {
+  def train(documents: util.List[Document], threads: Int, withOtherTerms: Boolean): Unit = {
+    if (documents == null || documents.isEmpty() || threads <= 0)
+      throw new IllegalArgumentException()
+
     dev2InstanceIDMap = new util.HashMap[Int,Int]()
     docsCount = documents.size()
 
@@ -73,6 +77,7 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     model = new ParallelTopicModel(topicsCount, alpha * topicsCount, beta);
     model.addInstances(instances)
     model.setNumIterations(iterations)
+    model.setNumThreads(threads)
     model.estimate()
   }
 
@@ -95,11 +100,13 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     * @param devID
     * @return tablice wartosci p-nstw poszczegolnych tematow wyszukiwania
     */
-  def getTopicDistributionByDevID(devID: Int): Array[Double] = {
+  def getTopicDistributionByDevID(devID: Int): Array[Float] = {
     if (model == null || dev2InstanceIDMap == null) {
       return null
     }
-    model.getTopicProbabilities(getInstanceID(devID))
+    val doubles = model.getTopicProbabilities(getInstanceID(devID))
+    val floats: Array[Float] = for (d <- doubles) yield d.toFloat
+    floats
   }
 
   /**
@@ -108,11 +115,13 @@ class TopicModel(numOfTopics: Int, iterations: Int, a: Double, b: Double) extend
     * @param instanceID
     * @return tablice wartosci p-nstw poszczegolnych tematow wyszukiwania
     */
-  def getTopicDistributionByInstanceID(instanceID: Int): Array[Double] = {
+  def getTopicDistributionByInstanceID(instanceID: Int): Array[Float] = {
     if (model == null) {
       return null
     }
-    model.getTopicProbabilities(instanceID)
+    val doubles = model.getTopicProbabilities(instanceID)
+    val floats: Array[Float] = for (d <- doubles) yield d.toFloat
+    floats
   }
 
   /**

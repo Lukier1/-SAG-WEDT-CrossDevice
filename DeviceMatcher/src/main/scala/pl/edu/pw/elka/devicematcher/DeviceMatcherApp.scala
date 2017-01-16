@@ -1,9 +1,7 @@
 package pl.edu.pw.elka.devicematcher
 
-import java.util
-
 import org.apache.log4j
-import pl.edu.pw.elka.devicematcher.data.{AnonDeviceDAO, Database, DocumentDAO}
+import pl.edu.pw.elka.devicematcher.data.{Database, DocumentDAO}
 import pl.edu.pw.elka.devicematcher.topicmodel.{Document, TopicModel, TopicModelSerializer}
 import akka.actor.{ActorSystem, Props}
 import pl.edu.pw.elka.devicematcher.agents.actors.IDServeActor
@@ -12,9 +10,10 @@ import pl.edu.pw.elka.devicematcher.utils._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import java.io._
 import java.util
 
+import pl.edu.pw.elka.devicematcher.agents.actor.GroupsServingActor
+import pl.edu.pw.elka.devicematcher.agents.actor.GroupsServingActor.Process
 
 import scala.collection.JavaConversions._
 
@@ -25,20 +24,29 @@ object DeviceMatcherApp extends App {
     /**
       * Zakres przetwarzania:
       */
-    val DO_STAGE_1 = false   // etap 1: przetwarzanie zapytan na dokumenty
-    val DO_STAGE_2 = false   // etap 2: wczytanie dokumentow i trenowanie modelu LDA
-    val DO_STAGE_3 = false  // etap 3: grupowanie dokumentow i zapis powiazan miedzy nimi
-    val DO_STAGE_4 = false  // etap 4: ewaluacja wyniku grupowania dokumentow
-    // parametry przetarzania etapu 1:
+    val DO_STAGE_1 = true    // etap 1: przetwarzanie zapytan na dokumenty
+    val DO_STAGE_2 = true    // etap 2: wczytanie dokumentow i trenowanie modelu LDA
+    val DO_STAGE_3 = true    // etap 3: grupowanie dokumentow i zapis powiazan miedzy nimi
+    val DO_STAGE_4 = true    // etap 4: ewaluacja wyniku grupowania dokumentow
+    // zakres przetwarzania
     val MIN_DEVID = 1
-    val MAX_DEVID = 1000
-    val NLP_WORKERS_COUNT = 4   // liczba workerów NLP
+    val MAX_DEVID = 100
+    // parametry etapu 1:
+    val NLP_WORKERS_COUNT = 4         // liczba workerów NLP
+    // parametry etapu 2:
+    val TOPIC_MODELING_THREADS = 4    // liczba watkow uczenia modelu LDA
+    // parametry etapu 3:
+    val GROUPING_WORKERS_COUNT = 4    // liczba workerów grupujących dokumenty urzadzen
+    val DIV_THRESHOLD = 0.2f          // prog dywergencji J-S dla ktorej akceptowane jest powiazanie urzadzen
+    val BUCKET_SIZE = 4               // pojemnosc kubelkow w 1. fazie etapu 3 (= zakladana maks. liczba urzadzen per uzytkownik)
+    // parametry etapu 4:
+    val WRITE_GROUPS_TO_FILE = true
 
     /**
       * Parametry modelu LDA:
       */
-    val TOPICS_COUNT = 200          // liczba modelowanych tematow wyszukiwan
-    val ITERATIONS = 500            // iteracji algorytmu LDA
+    val TOPICS_COUNT = 50          // liczba modelowanych tematow wyszukiwan
+    val ITERATIONS = 50            // iteracji algorytmu LDA
     val A = 0.05                    // alfa
     val B = 0.01                    // beta
     val SAVE_MODEL_TO_FILE = true   // flaga zapisu wytrenowanego modelu do pliku
@@ -53,8 +61,8 @@ object DeviceMatcherApp extends App {
       * Opcje dotyczace dodawania slow do dokumentow:
       */
     val WITH_OTHER_TERMS = false    // uwzgledniaj slowa ze zbioru 'pozostale'
-    val ADD_HYPERONYMS = false      // dodaj do dokumentow rowniez hiperonimy slow ze zbioru 'pojecia'
-    val ADD_SYNONYMS = false        // dodaj do dokumentow rowniez synonimy slow ze zbioru 'pojecia'
+//    val ADD_HYPERONYMS = false      // dodaj do dokumentow rowniez hiperonimy slow ze zbioru 'pojecia'
+//    val ADD_SYNONYMS = false        // dodaj do dokumentow rowniez synonimy slow ze zbioru 'pojecia'
 
     val TO_FILE = true
     val TO_STDOUT = true
@@ -68,6 +76,10 @@ object DeviceMatcherApp extends App {
     logger.info("   do stage 2: " + DO_STAGE_2)
     logger.info("   do stage 3: " + DO_STAGE_3)
     logger.info("   do stage 4: " + DO_STAGE_4)
+
+    logger.info("Dropping Document collection...")
+    DocumentDAO.clearCollection()
+    logger.info("   done.")
 
     if (DO_STAGE_1)
       processQueriesAndPrepareDocuments()
@@ -96,33 +108,12 @@ object DeviceMatcherApp extends App {
         logger.error("   could not serialize/save topic model to file.")
     }
 
+    var groupedDevIds: util.List[Group] = null
     if (DO_STAGE_3)
-      findConnectionsBetweenDocuments()
+      groupedDevIds = findConnectionsBetweenDocuments()
 
-    if (DO_STAGE_4)
-      evaluateFoundConnections()
-
-    /**
-      * przykład użycia metryk,
-      * zakres od 9 do 15 z powodu brakujących urządzeń w bazie
-      */
-//    val docs = MatcherDataTest.metcicsDocs
-//    FakeJSDivergence.isMetrics=true
-//    var groups = MatcherUtils.getUntrimmedGroups(docs, 0.3, groupMembersSize = 3)
-//
-//    groups = MatcherUtils.trimGroups(0.3, groups, groupMembersSize = 3)
-//    MatcherUtils.writeGroupsToFile(groups, "groups:" + 0.3 + "metrics.txt", trimmed = false)
-//
-//    val metrics = MetricsUtils.getBasicMetrics(groups,9,7)
-//
-//    logger.debug("Metrics: ")
-//    logger.debug("True Positives: "+metrics(0))
-//    logger.debug("False Positives: "+metrics(1))
-//    logger.debug("True Negatives: "+metrics(2))
-//    logger.debug("False Negatives: "+metrics(3))
-//    logger.debug("Accuracy: "+MetricsUtils.accuracy(metrics(0),metrics(1),metrics(2),metrics(3)))
-//    logger.debug("Precision: "+MetricsUtils.precision(metrics(0),metrics(1)))
-//    logger.debug("Recall: "+MetricsUtils.recall(metrics(0),metrics(3)))
+    if (DO_STAGE_4 && groupedDevIds != null)
+      evaluateFoundConnections(groupedDevIds)
 
     Database.client.close()
   }
@@ -154,7 +145,7 @@ object DeviceMatcherApp extends App {
     */
   def readDocumentsAndFeedTopicModel(): TopicModel = {
     logger.info("Stage 2 starting...")
-    logger.info(s"   {topics, iterations, alpha, beta} = {$TOPICS_COUNT, $ITERATIONS, $A, $B}")
+    logger.info(s"   {topics, threads, iterations, alpha, beta} = {$TOPICS_COUNT, $TOPIC_MODELING_THREADS, $ITERATIONS, $A, $B}")
 
     logger.info("Reading documents from database...")
     val docs = new util.ArrayList[Document]()
@@ -162,13 +153,16 @@ object DeviceMatcherApp extends App {
     for (r <- result) {
       docs.add(DocumentDAO.fromDBObjectToDocument(r))
     }
-    logger.info("   done.")
-    Database.client.close()
-    logger.debug("db closed")
 
     logger.info("Training topic model...")
     val lda = new TopicModel(TOPICS_COUNT, ITERATIONS, A, B)
-    lda.train(docs, WITH_OTHER_TERMS)
+    lda.train(docs, TOPIC_MODELING_THREADS, WITH_OTHER_TERMS)
+    logger.info("   done.")
+
+    logger.info("Saving topic distributions in documents into database...")
+    for (d <- docs) {
+      DocumentDAO.updateDocument(d.getDeviceID(), lda.getTopicDistributionByDevID(d.getDeviceID()))
+    }
     logger.info("   done.")
 
     logger.info("Stage 2 done.")
@@ -178,9 +172,35 @@ object DeviceMatcherApp extends App {
   /**
     * 3. etap przetwarzania: analiza dokumentow urzadzen z wykorzystaniem wytrenowanego modelu LDA w poszukiwaniu
     * ich wzajemnych zaleznosci i zbudowania bazy powiazanych ze soba dokumentow
+    *
+    * @return liste grup powiazanych devId
     */
-  def findConnectionsBetweenDocuments(): Unit = {
-    //TODO
+  def findConnectionsBetweenDocuments(): util.List[Group] = {
+    logger.info("Stage 3 starting...")
+    logger.info(s"   processing devIDs in range: [$MIN_DEVID,$MAX_DEVID]")
+    logger.info(s"   GROUPING_workers count: $GROUPING_WORKERS_COUNT")
+    logger.info(s"J-S divergence threshold: $DIV_THRESHOLD")
+
+    val result = DocumentDAO.getDocumentsFromRange(MIN_DEVID, MAX_DEVID)
+    val docs = new util.ArrayList[Document]()
+    for (r <- result) {
+      docs.add(DocumentDAO.fromDBObjectToDocument(r))
+    }
+    var groupedDevIds : util.List[Group] = null
+
+    val actorsSystem = ActorSystem("System")
+    val rootActor = actorsSystem.actorOf(Props(classOf[GroupsServingActor], GROUPING_WORKERS_COUNT, DIV_THRESHOLD, BUCKET_SIZE, docs))
+
+    val processed = rootActor.ask(Process())(8 hours)
+    Await.result(processed, 8 hours) match {
+      case GroupsServingActor.Result(list) =>
+        groupedDevIds = list
+    }
+    actorsSystem.terminate()
+
+    logger.info("Stage 3 done.")
+
+    groupedDevIds
   }
 
   /**
@@ -188,9 +208,38 @@ object DeviceMatcherApp extends App {
     * - obliczanie TN, TP, FN, FP porownujac wynik z oryginalnymi powiazaniami z bazy danych
     * - obliczenie metryk na podstawie powyzszych wartosci
     * - pokazanie wyniku uzytkownikowi
+    *
+    * @param groups lista grup powiazanych devId
     */
-  def evaluateFoundConnections(): Unit = {
-    //TODO
+  def evaluateFoundConnections(groups: util.List[Group]): Unit = {
+    logger.info("Stage 4 starting...")
+    logger.info("   calculating metrics...")
+
+    if (WRITE_GROUPS_TO_FILE) {
+      if (!MatcherUtils.writeGroupsToFile(groups, "groups_th_" + DIV_THRESHOLD + "_metrics.txt", trimmed = true))
+        logger.error("Saving list of grouped devIds to file failed.")
+    }
+
+    val metrics = MetricsUtils.getBasicMetrics(groups)
+    val tp = metrics(0)
+    val fp = metrics(1)
+    val tn = metrics(2)
+    val fn = metrics(3)
+    val precision = MetricsUtils.precision(tp, fp)
+    val recall = MetricsUtils.recall(tp, fn)
+
+    logger.info("Metrics: ")
+    logger.debug("True Positives: " + tp)
+    logger.debug("False Positives: "+ + fp)
+    logger.debug("True Negatives: " + tn)
+    logger.debug("False Negatives: " + fn)
+    logger.info("Precision: " + precision)
+    logger.info("Recall: " + recall)
+    logger.info("Accuracy: " + MetricsUtils.accuracy(tp, fp, tn, fn))
+    logger.info("Specificity: " + MetricsUtils.specificity(tn, fp))
+    logger.info("F-measure: " + MetricsUtils.f_measure(precision, recall))
+
+    logger.info("Stage 4 done.")
   }
 
 }

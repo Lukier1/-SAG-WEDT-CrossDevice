@@ -67,7 +67,7 @@ class Document(devID: Int, namedEnts: util.List[String], wordnetWords: util.List
   /**
     * Rozklad wystepowania tematow wyszukiwan
     */
-  private var topicDistribution: Array[Double] = _
+  private var topicDistribution: Array[Float] = _
 
   def getDeviceID() = deviceID
 
@@ -112,10 +112,10 @@ class Document(devID: Int, namedEnts: util.List[String], wordnetWords: util.List
     seq
   }
 
-  def setTopicDistribution(dist: Array[Double]): Unit = {
+  def setTopicDistribution(dist: Array[Float]): Unit = {
     topicDistribution = dist
   }
-  def getTopicDistribution(): Array[Double] = { topicDistribution }
+  def getTopicDistribution(): Array[Float] = { topicDistribution }
 
   override def toString(): String = {
     val str = new StringBuilder("devID: " + devID + " named_entities: { ")

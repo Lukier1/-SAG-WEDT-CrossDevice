@@ -14,11 +14,11 @@ import pl.edu.pw.elka.devicematcher.utils.DevMatchLogger
   */
 object IDServeActor {
     case class RangeID(begin : Int, end : Int)
-    val WORKER_NUMBER = 10
+//    val WORKER_NUMBER = 10
     case class Success(id : Int)
     case class Failed(id : Int)
 }
-class IDServeActor(workersNumber : Int) extends Actor {
+class IDServeActor(workers_count : Int) extends Actor {
   import IDServeActor._
 
   val TO_FILE = true
@@ -26,7 +26,7 @@ class IDServeActor(workersNumber : Int) extends Actor {
   val logger = DevMatchLogger.getLogger("IDServeActor", log4j.Level.DEBUG, TO_FILE, "idserveactor.log", TO_STDOUT)
 
   //Router do rozsyłania wiadomości,
-  val workerRouter : ActorRef = context.actorOf(BalancingPool(WORKER_NUMBER).props(Props(classOf[NLPProxyActor], self)))
+  val workerRouter : ActorRef = context.actorOf(BalancingPool(workers_count).props(Props(classOf[NLPProxyActor], self)))
   var deviceNumber  : Int =  0
   var processedDevices : Int = 0
 
@@ -44,17 +44,15 @@ class IDServeActor(workersNumber : Int) extends Actor {
     case Success(_ : Int) =>
       processedDevices += 1
       logger.info("Doc processed. Remaining: " + (deviceNumber-processedDevices))
-      //if (processedDevices >= 0.999 * deviceNumber) // Gdy zostanie przetworzone 0.999 wysyła wiadomośc potwierdzającą
       if (processedDevices >= deviceNumber)
       {
-        logger.debug("0.999 devices has been processed -> sending 'done'...")
+        logger.debug("All devices has been processed -> sending 'done'...")
         systemSender ! "done"
       }
     case Failed(id : Int) =>
       logger.debug("'Failed' message received from processing devId: " + id)
       workerRouter ! DeviceIDProc(id)
     case _ =>
-      //println("Unsupported message")
       logger.error("Unsupported message received.")
   }
 
