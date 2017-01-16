@@ -220,7 +220,7 @@ object DeviceMatcherApp extends App {
         logger.error("Saving list of grouped devIds to file failed.")
     }
 
-    val metrics = MetricsUtils.getBasicMetrics(groups)
+    val metrics = MetricsUtils.getBasicMetrics(groups, startIndex = MIN_DEVID, range = MAX_DEVID+1)
     val tp = metrics(0)
     val fp = metrics(1)
     val tn = metrics(2)

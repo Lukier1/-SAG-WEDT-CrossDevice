@@ -5,10 +5,16 @@ import pl.edu.pw.elka.devicematcher.data.{AnonDeviceDAO, DeviceQueryDAO}
 import scala.collection.JavaConversions._
 import java.util
 
+import org.apache.log4j
+
 /**
   * Created by dawid on 02.01.17.
   */
 object MetricsUtils {
+
+  val TO_FILE = true
+  val TO_STDOUT = true
+  val logger = DevMatchLogger.getLogger("NLPWorkerActor", log4j.Level.DEBUG, TO_FILE, "nlpworkers.log", TO_STDOUT)
 
   def log2(a: Double): Double = {
     Math.log(a) / Math.log(2)
