@@ -30,25 +30,25 @@ object DeviceMatcherApp extends App {
     val DO_STAGE_4 = true    // etap 4: ewaluacja wyniku grupowania dokumentow
     // zakres przetwarzania
     val MIN_DEVID = 1
-    val MAX_DEVID = 100
+    val MAX_DEVID = 1500/**/
     // parametry etapu 1:
     val NLP_WORKERS_COUNT = 4         // liczba workerów NLP
     // parametry etapu 2:
     val TOPIC_MODELING_THREADS = 4    // liczba watkow uczenia modelu LDA
     // parametry etapu 3:
     val GROUPING_WORKERS_COUNT = 4    // liczba workerów grupujących dokumenty urzadzen
-    val DIV_THRESHOLD = 0.2f          // prog dywergencji J-S dla ktorej akceptowane jest powiazanie urzadzen
-    val BUCKET_SIZE = 4               // pojemnosc kubelkow w 1. fazie etapu 3 (= zakladana maks. liczba urzadzen per uzytkownik)
+    val DIV_THRESHOLD = 0.2f  /**/        // prog dywergencji J-S dla ktorej akceptowane jest powiazanie urzadzen
+    val BUCKET_SIZE = 4      /**/         // pojemnosc kubelkow w 1. fazie etapu 3 (= zakladana maks. liczba urzadzen per uzytkownik)
     // parametry etapu 4:
     val WRITE_GROUPS_TO_FILE = true
 
     /**
       * Parametry modelu LDA:
       */
-    val TOPICS_COUNT = 50          // liczba modelowanych tematow wyszukiwan
+    val TOPICS_COUNT = 800     /**/     // liczba modelowanych tematow wyszukiwan
     val ITERATIONS = 50            // iteracji algorytmu LDA
     val A = 0.05                    // alfa
-    val B = 0.01                    // beta
+    val B = 0.002                   // beta
     val SAVE_MODEL_TO_FILE = true   // flaga zapisu wytrenowanego modelu do pliku
 
     /**
@@ -68,6 +68,12 @@ object DeviceMatcherApp extends App {
     val TO_STDOUT = true
     val logger = DevMatchLogger.getLogger("DeviceMatcherApp", log4j.Level.DEBUG, TO_FILE, "app.log", TO_STDOUT)
   }
+
+  var timeStage1 = 0L
+  var timeStage2 = 0L
+  var timeStage3 = 0L
+  var timeStage4 = 0L
+
   import utils._
 
   override def main(args: Array[String]): Unit = {
@@ -81,9 +87,12 @@ object DeviceMatcherApp extends App {
     DocumentDAO.clearCollection()
     logger.info("   done.")
 
+    var tmpTime = System.currentTimeMillis()
     if (DO_STAGE_1)
       processQueriesAndPrepareDocuments()
+    timeStage1 = System.currentTimeMillis() - tmpTime
 
+    tmpTime = System.currentTimeMillis()
     var lda: TopicModel = null
     if (DO_STAGE_2)
       lda = readDocumentsAndFeedTopicModel()
@@ -107,15 +116,28 @@ object DeviceMatcherApp extends App {
       else
         logger.error("   could not serialize/save topic model to file.")
     }
+    timeStage2 = System.currentTimeMillis() - tmpTime
 
+    tmpTime = System.currentTimeMillis()
     var groupedDevIds: util.List[Group] = null
     if (DO_STAGE_3)
       groupedDevIds = findConnectionsBetweenDocuments()
+    timeStage3 = System.currentTimeMillis() - tmpTime
 
+    tmpTime = System.currentTimeMillis()
     if (DO_STAGE_4 && groupedDevIds != null)
       evaluateFoundConnections(groupedDevIds)
+    timeStage4 = System.currentTimeMillis() - tmpTime
 
+    logTimes()
     Database.client.close()
+  }
+
+  private def logTimes() = {
+    logger.info(s"Time of 1. stage: $timeStage1 ms")
+    logger.info(s"Time of 2. stage: $timeStage2 ms")
+    logger.info(s"Time of 3. stage: $timeStage3 ms")
+    logger.info(s"Time of 4. stage: $timeStage4 ms")
   }
 
   /**
@@ -220,7 +242,8 @@ object DeviceMatcherApp extends App {
         logger.error("Saving list of grouped devIds to file failed.")
     }
 
-    val metrics = MetricsUtils.getBasicMetrics(groups, startIndex = MIN_DEVID, range = MAX_DEVID+1)
+    val metrics = MetricCalculator.calculate(groups, MIN_DEVID, MAX_DEVID);
+    //MetricsUtils.getBasicMetrics(groups, startIndex = MIN_DEVID, range = MAX_DEVID)
     val tp = metrics(0)
     val fp = metrics(1)
     val tn = metrics(2)

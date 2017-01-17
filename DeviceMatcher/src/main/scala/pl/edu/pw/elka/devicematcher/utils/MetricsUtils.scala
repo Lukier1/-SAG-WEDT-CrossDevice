@@ -6,6 +6,9 @@ import scala.collection.JavaConversions._
 import java.util
 
 import org.apache.log4j
+import pl.edu.pw.elka.devicematcher.DeviceMatcherApp
+
+import scala.collection.JavaConverters._
 
 /**
   * Created by dawid on 02.01.17.
@@ -129,7 +132,7 @@ object MetricsUtils {
     * @param groups grupy przyporządkowane przez algorytm grupowania urządzeń
     * @return lista metryk, kolejno: positives, falsePositives, negatives, falseNegatives
     */
-  def getBasicMetrics(groups: util.List[Group], startIndex:Int=0, range: Int=0): util.List[Int] = {
+  def getBasicMetrics(groups: util.List[Group], startIndex:Int=0, range: Int=0): util.List[Integer] = {
     val maxDeviceId = AnonDeviceDAO.getMaxDeviceId()
     val length = if (range == 0) maxDeviceId else range+startIndex
     if (length>maxDeviceId)
@@ -148,7 +151,7 @@ object MetricsUtils {
             group = g
           }
         }
-        for (j <- startIndex until length if i != j && group!=null) {
+        for (j <- DeviceMatcherApp.utils.MIN_DEVID until DeviceMatcherApp.utils.MAX_DEVID if i != j && group!=null) {
           val otherAnonId = AnonDeviceDAO.getAnonIdForDevice(j)
           if (otherAnonId != -1) {
             val isInTheSameGroup = group.containsDevId(j) || group.devId == j
@@ -165,7 +168,11 @@ object MetricsUtils {
         }
       }
     }
-    new util.LinkedList[Int](List(positives, falsePositives, negatives, falseNegatives))
+    val list = new util.LinkedList[Integer]()
+    list.add(positives);
+    list.add( falsePositives);
+    list.add( negatives);
+    list.add( falseNegatives)
+    return list
   }
-
 }
